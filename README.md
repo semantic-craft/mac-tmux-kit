@@ -66,7 +66,7 @@ Not on the Mac App Store (the app is non-sandboxed: it runs `tmux` and uses the 
 
 ```sh
 # prerequisites: Xcode, XcodeGen (brew install xcodegen), tmux
-git clone https://github.com/<you>/mac-tmux-kit.git
+git clone https://github.com/semantic-craft/mac-tmux-kit.git
 cd mac-tmux-kit
 ./scripts/build-app.sh        # builds, signs, installs to /Applications, launches
 ```
