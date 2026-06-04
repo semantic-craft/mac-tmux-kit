@@ -8,19 +8,17 @@ import SwiftUI
 @main
 struct MacTmuxKitApp: App {
     @State private var appState = AppState()
+    @AppStorage("showMenuBarIcon") private var showMenuBarIcon = true
 
     var body: some Scene {
-        MenuBarExtra("Tmux Kit", systemImage: "terminal") {
+        MenuBarExtra("Tmux Kit", systemImage: "terminal", isInserted: $showMenuBarIcon) {
             MenuBarPopoverView()
                 .environment(appState)
         }
         .menuBarExtraStyle(.window)
 
-        Window("Tmux Kit", id: WindowID.dashboard) {
-            DashboardView()
-                .environment(appState)
-        }
-        .windowResizability(.contentMinSize)
+        // Dashboard is an AppKit window (DashboardWindowController) so the global
+        // hotkey can summon it even when the menu-bar icon is hidden.
 
         Window("tmux Console", id: WindowID.console) {
             ConsoleView()
@@ -40,9 +38,9 @@ struct MacTmuxKitApp: App {
     }
 }
 
-/// Stable identifiers for `openWindow`.
+/// Stable identifiers for `openWindow`. (The Dashboard is an AppKit window, not
+/// a scene, so it isn't here.)
 enum WindowID {
-    static let dashboard = "dashboard"
     static let console = "console"
     static let cheatsheet = "cheatsheet"
 }

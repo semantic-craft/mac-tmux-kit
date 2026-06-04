@@ -20,6 +20,7 @@ final class AppState {
     let service: TmuxService?
     let focusService = GhosttyFocusService()
     private var commandPalette: CommandPaletteController?
+    private var dashboard: DashboardWindowController?
 
     init() {
         let override = UserDefaults.standard.string(forKey: "tmuxBinaryPath")
@@ -33,10 +34,16 @@ final class AppState {
     // MARK: - Command palette / hotkeys
 
     private func setupHotkeys() {
-        let controller = CommandPaletteController(appState: self)
-        commandPalette = controller
-        KeyboardShortcuts.onKeyDown(for: .toggleCommandPalette) { [weak controller] in
-            controller?.toggle()
+        let palette = CommandPaletteController(appState: self)
+        commandPalette = palette
+        let dash = DashboardWindowController(appState: self)
+        dashboard = dash
+
+        KeyboardShortcuts.onKeyDown(for: .toggleCommandPalette) { [weak palette] in
+            palette?.toggle()
+        }
+        KeyboardShortcuts.onKeyDown(for: .toggleDashboard) { [weak dash] in
+            dash?.show()
         }
         KeyboardShortcuts.onKeyDown(for: .switchRecentSession) { [weak self] in
             Task { await self?.switchToMostRecent() }
@@ -44,6 +51,7 @@ final class AppState {
     }
 
     func showCommandPalette() { commandPalette?.show() }
+    func showDashboard() { dashboard?.show() }
 
     /// Switch + focus the most recently active session that isn't already attached
     /// (falls back to the most recent overall).
