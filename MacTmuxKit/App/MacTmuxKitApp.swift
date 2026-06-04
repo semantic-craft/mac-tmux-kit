@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 /// App entry point.
 ///
@@ -7,8 +8,14 @@ import SwiftUI
 /// on demand. The command palette and global hotkeys attach in later phases.
 @main
 struct MacTmuxKitApp: App {
-    @State private var appState = AppState()
+    // An AppDelegate owns AppState and registers the global hotkeys in
+    // applicationDidFinishLaunching. A plain `@State = AppState()` is created
+    // lazily on the first scene render — for a menu-bar app that's the first
+    // popover open, which left Hyper+D and the palette hotkey dead until then.
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @AppStorage("showMenuBarIcon") private var showMenuBarIcon = true
+
+    private var appState: AppState { delegate.appState }
 
     var body: some Scene {
         MenuBarExtra("Tmux Kit", systemImage: "terminal", isInserted: $showMenuBarIcon) {
@@ -43,4 +50,18 @@ struct MacTmuxKitApp: App {
 enum WindowID {
     static let console = "console"
     static let cheatsheet = "cheatsheet"
+}
+
+/// Owns the shared `AppState` and registers global hotkeys at the right moment.
+/// AppState is created when the delegate is instantiated (app launch), but the
+/// Carbon hotkeys are registered in `applicationDidFinishLaunching` — registering
+/// them earlier (e.g. in a `@State` initializer or App.init) silently fails
+/// because AppKit's event machinery isn't ready yet.
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    let appState = AppState()
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        appState.registerHotkeys()
+    }
 }

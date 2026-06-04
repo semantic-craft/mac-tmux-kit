@@ -31,7 +31,6 @@ final class AppState {
     init() {
         let override = UserDefaults.standard.string(forKey: "tmuxBinaryPath")
         service = TmuxBinaryLocator.locate(override: override).map { TmuxService(binary: $0) }
-        setupHotkeys()
         // Resolve the Ghostty-derived theme off the main thread so the first view
         // render never blocks on the `ghostty +show-config` subprocess.
         Task.detached(priority: .utility) { _ = Theme.ghostty }
@@ -42,7 +41,10 @@ final class AppState {
 
     // MARK: - Command palette / hotkeys
 
-    private func setupHotkeys() {
+    /// Register global hotkeys and build the palette/dashboard controllers. Called
+    /// from `AppDelegate.applicationDidFinishLaunching` — not from `init` — so the
+    /// Carbon hotkey registration runs after AppKit is ready.
+    func registerHotkeys() {
         let palette = CommandPaletteController(appState: self)
         commandPalette = palette
         let dash = DashboardWindowController(appState: self)
