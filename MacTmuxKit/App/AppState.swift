@@ -19,6 +19,9 @@ final class AppState {
     /// Server short host name, used to tell a default pane title from a user-set
     /// one (tmux seeds `pane_title` with the host). Refreshed with the tree.
     private(set) var hostShort = ""
+    /// Transient confirmation for the last action (optimistic-UI feedback).
+    private(set) var toast: ToastInfo?
+    private var toastToken = UUID()
 
     let service: TmuxService?
     let focusService = GhosttyFocusService()
@@ -94,11 +97,30 @@ final class AppState {
         }
     }
 
-    /// Run a mutating action, surface any error, then refresh.
-    func run(_ work: @escaping (TmuxService) async throws -> Void) async {
+    /// Run a mutating action, then refresh. On success, optionally flash a
+    /// confirmation toast; on failure, surface the error inline and as a toast.
+    func run(success: String? = nil, _ work: @escaping (TmuxService) async throws -> Void) async {
         guard let service else { return }
-        do { try await work(service) } catch { statusMessage = message(for: error) }
+        do {
+            try await work(service)
+            if let success { showToast(success, kind: .success) }
+        } catch {
+            let text = message(for: error)
+            statusMessage = text
+            showToast(text, kind: .failure)
+        }
         await refresh()
+    }
+
+    /// Flash a transient toast, auto-dismissed after ~2s unless superseded.
+    func showToast(_ text: String, kind: ToastInfo.Kind) {
+        let info = ToastInfo(text: text, kind: kind)
+        toast = info
+        toastToken = info.id
+        Task {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            if toastToken == info.id { toast = nil }
+        }
     }
 
     // MARK: - Session actions
@@ -155,16 +177,16 @@ final class AppState {
         }
     }
     func newSession(name: String, startDir: String?) async {
-        await run { try await $0.newSession(name: name, startDir: startDir) }
+        await run(success: "Created session") { try await $0.newSession(name: name, startDir: startDir) }
     }
     func renameSession(_ s: TmuxSession, to name: String) async {
-        await run { try await $0.renameSession(id: s.id, to: name) }
+        await run(success: "Renamed session") { try await $0.renameSession(id: s.id, to: name) }
     }
     func killSession(_ s: TmuxSession) async {
-        await run { try await $0.killSession(id: s.id) }
+        await run(success: "Killed session") { try await $0.killSession(id: s.id) }
     }
     func killOtherSessions(keep s: TmuxSession) async {
-        await run { try await $0.killOtherSessions(keep: s.id) }
+        await run(success: "Killed other sessions") { try await $0.killOtherSessions(keep: s.id) }
     }
 
     // MARK: - Window actions
@@ -173,21 +195,21 @@ final class AppState {
         await run { try await $0.selectWindow(target: w.target) }
     }
     func renameWindow(_ w: TmuxWindow, to name: String) async {
-        await run { try await $0.renameWindow(target: w.target, to: name) }
+        await run(success: "Renamed window") { try await $0.renameWindow(target: w.target, to: name) }
     }
     func killWindow(_ w: TmuxWindow) async {
-        await run { try await $0.killWindow(target: w.target) }
+        await run(success: "Killed window") { try await $0.killWindow(target: w.target) }
     }
     func newWindow(inSession id: String, name: String?, startDir: String?) async {
-        await run { try await $0.newWindow(sessionId: id, name: name, startDir: startDir) }
+        await run(success: "Created window") { try await $0.newWindow(sessionId: id, name: name, startDir: startDir) }
     }
 
     // MARK: - Pane actions
 
     func split(_ p: TmuxPane, horizontal: Bool) async {
-        await run { try await $0.splitWindow(paneId: p.id, horizontal: horizontal, cwd: p.path) }
+        await run(success: "Split pane") { try await $0.splitWindow(paneId: p.id, horizontal: horizontal, cwd: p.path) }
     }
-    func breakPane(_ p: TmuxPane) async { await run { try await $0.breakPane(paneId: p.id) } }
+    func breakPane(_ p: TmuxPane) async { await run(success: "Broke out pane") { try await $0.breakPane(paneId: p.id) } }
 
     /// The pane's display label: its custom title when set, else its command.
     func paneName(_ p: TmuxPane) -> String {
@@ -202,13 +224,15 @@ final class AppState {
 
     /// Rename a pane by setting its `pane_title`.
     func renamePane(_ p: TmuxPane, to title: String) async {
-        await run { try await $0.setPaneTitle(paneId: p.id, to: title) }
+        await run(success: title.isEmpty ? "Cleared pane title" : "Renamed pane") {
+            try await $0.setPaneTitle(paneId: p.id, to: title)
+        }
     }
-    func killPane(_ p: TmuxPane) async { await run { try await $0.killPane(paneId: p.id) } }
-    func killOtherPanes(_ p: TmuxPane) async { await run { try await $0.killOtherPanes(paneId: p.id) } }
+    func killPane(_ p: TmuxPane) async { await run(success: "Killed pane") { try await $0.killPane(paneId: p.id) } }
+    func killOtherPanes(_ p: TmuxPane) async { await run(success: "Killed other panes") { try await $0.killOtherPanes(paneId: p.id) } }
     func markPane(_ p: TmuxPane) async { await run { try await $0.markPane(paneId: p.id) } }
     func clearMarkedPane() async { await run { try await $0.clearMarkedPane() } }
-    func clearHistory(_ p: TmuxPane) async { await run { try await $0.clearHistory(paneId: p.id) } }
+    func clearHistory(_ p: TmuxPane) async { await run(success: "Cleared history") { try await $0.clearHistory(paneId: p.id) } }
 
     /// Swap a pane with its geometric neighbor in a direction (same window).
     func swap(_ p: TmuxPane, _ direction: PaneDirection) async {
@@ -216,7 +240,7 @@ final class AppState {
             statusMessage = "No adjacent pane in that direction."
             return
         }
-        await run { try await $0.swapPanes(source: p.id, target: neighbor.id) }
+        await run(success: "Swapped panes") { try await $0.swapPanes(source: p.id, target: neighbor.id) }
     }
 
     // MARK: - tmux-resurrect

@@ -20,9 +20,9 @@ struct RenameField: View {
             .focused($focused)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
-            .background(.quaternary, in: RoundedRectangle(cornerRadius: 5))
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
             .overlay(
-                RoundedRectangle(cornerRadius: 5)
+                RoundedRectangle(cornerRadius: 6)
                     .strokeBorder(Color.accentColor.opacity(0.65))
             )
             .onAppear { focused = true }
