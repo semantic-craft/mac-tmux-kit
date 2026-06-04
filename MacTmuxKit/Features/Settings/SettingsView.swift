@@ -23,6 +23,7 @@ struct SettingsView: View {
                 case .general: GeneralPane()
                 case .keybindings: KeybindingsPane()
                 case .focus: FocusPane()
+                case .backup: BackupPane()
                 }
             }
             .navigationTitle(tab.title)
@@ -35,13 +36,14 @@ struct SettingsView: View {
 }
 
 enum SettingsTab: String, CaseIterable, Identifiable {
-    case general, keybindings, focus
+    case general, keybindings, focus, backup
     var id: Self { self }
     var title: String {
         switch self {
         case .general: "General"
         case .keybindings: "Keybindings"
         case .focus: "Focus"
+        case .backup: "Backup"
         }
     }
     var icon: String {
@@ -49,6 +51,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .general: "gearshape"
         case .keybindings: "command"
         case .focus: "scope"
+        case .backup: "tray.and.arrow.down"
         }
     }
 }
@@ -150,6 +153,68 @@ private struct FocusPane: View {
                 granted = AccessibilityBridge.isTrusted
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
             }
+        }
+    }
+}
+
+// MARK: - Backup (tmux-resurrect)
+
+private struct BackupPane: View {
+    @Environment(AppState.self) private var app
+    @AppStorage("resurrectScriptsPath") private var override = ""
+    @State private var status = ""
+    @State private var working = false
+    @State private var confirmRestore = false
+
+    var body: some View {
+        Form {
+            Section("tmux-resurrect") {
+                LabeledContent("Scripts", value: app.resurrectScriptsDir?.path ?? "Not found")
+                LabeledContent("Last saved", value: lastSavedText)
+                TextField("Scripts path override", text: $override, prompt: Text("Auto-detect"))
+            }
+            Section {
+                HStack(spacing: 10) {
+                    Button("Save layout now") { perform { await app.resurrectSave() } }
+                        .disabled(!app.resurrectAvailable || working)
+                    Button("Restore last layout") { confirmRestore = true }
+                        .disabled(!app.resurrectAvailable || working)
+                    if working { ProgressView().controlSize(.small) }
+                }
+                if !status.isEmpty {
+                    Text(status).font(.caption).foregroundStyle(.secondary)
+                }
+                if !app.resurrectAvailable {
+                    Text("Install the tmux-resurrect plugin, or set its scripts path above.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .confirmationDialog("Restore last saved layout?", isPresented: $confirmRestore) {
+            Button("Restore", role: .destructive) { perform { await app.resurrectRestore() } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This recreates the saved sessions, windows, and panes.")
+        }
+    }
+
+    private var lastSavedText: String {
+        guard let date = app.resurrectLastSaved() else { return "Never" }
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .short
+        return f.string(from: date)
+    }
+
+    private func perform(_ op: @escaping () async -> String?) {
+        working = true
+        status = ""
+        Task {
+            let error = await op()
+            working = false
+            status = error ?? "Done."
         }
     }
 }
