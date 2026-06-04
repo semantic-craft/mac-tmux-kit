@@ -1,9 +1,9 @@
 import XCTest
 @testable import TmuxKitCore
 
-/// Parser tests built from REAL captured tmux output (see plan §验证策略).
-/// Fixtures are assembled by joining fields with the 0x1F unit separator so the
-/// test source stays readable.
+/// Parser tests built from real-shaped tmux output with sanitized, generic
+/// session names and paths (no personal projects). Fixtures are assembled by
+/// joining fields with the 0x1F unit separator so the test source stays readable.
 final class TmuxParserTests: XCTestCase {
     private let us = String(TmuxFormat.unitSeparator)
 
@@ -14,7 +14,7 @@ final class TmuxParserTests: XCTestCase {
 
     func testParseSessions() {
         let raw = block([
-            ["$47", "develop", "1", "3", "1780476888", "1780545950", "/Users/x/Projects/web-app"],
+            ["$47", "web", "1", "3", "1780476888", "1780545950", "/Users/x/Projects/web-app"],
             ["$46", "api", "0", "1", "1780407831", "1780407831", "/Users/x/.cache/api-preview"],
             ["$33", "docs", "0", "2", "1780355028", "1780460485", "/Users/x/Documents/笔记_示例_中文"],
         ])
@@ -23,7 +23,7 @@ final class TmuxParserTests: XCTestCase {
 
         XCTAssertEqual(sessions.count, 3)
         XCTAssertEqual(sessions[0].id, "$47")
-        XCTAssertEqual(sessions[0].name, "develop")
+        XCTAssertEqual(sessions[0].name, "web")
         XCTAssertTrue(sessions[0].attached)
         XCTAssertEqual(sessions[0].windowCount, 3)
         XCTAssertEqual(sessions[0].created, Date(timeIntervalSince1970: 1780476888))
@@ -88,12 +88,12 @@ final class TmuxParserTests: XCTestCase {
     // MARK: - Clients
 
     func testParseClients() {
-        let raw = row(["/dev/ttys009", "develop", "87142", "xterm-ghostty"])
+        let raw = row(["/dev/ttys009", "web", "87142", "xterm-ghostty"])
         let clients = TmuxParser.clients(raw)
 
         XCTAssertEqual(clients.count, 1)
         XCTAssertEqual(clients[0].tty, "/dev/ttys009")
-        XCTAssertEqual(clients[0].sessionName, "develop")  // name, not id
+        XCTAssertEqual(clients[0].sessionName, "web")  // name, not id
         XCTAssertEqual(clients[0].pid, 87142)
         XCTAssertEqual(clients[0].termName, "xterm-ghostty")
     }
@@ -110,7 +110,7 @@ final class TmuxParserTests: XCTestCase {
     func testSkipsMalformedRecords() {
         // A line with too few fields must be skipped, not crash.
         let raw = block([
-            ["$47", "develop", "1", "3", "1780476888", "1780545950", "/Users/x"],
+            ["$47", "web", "1", "3", "1780476888", "1780545950", "/Users/x"],
             ["$bad", "only-two"],
         ])
         let sessions = TmuxParser.sessions(raw)
