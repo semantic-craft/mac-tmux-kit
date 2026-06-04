@@ -12,11 +12,11 @@ struct EmptyStateView: View {
                 .font(.system(size: 30))
                 .foregroundStyle(.secondary)
             Text(title)
-                .font(.system(size: 13))
+                .font(Theme.Font.body)
                 .foregroundStyle(.secondary)
             if let subtitle {
                 Text(subtitle)
-                    .font(.system(size: 11))
+                    .font(Theme.Font.rowSubtitle)
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
             }

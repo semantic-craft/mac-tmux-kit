@@ -27,9 +27,9 @@ struct MenuBarPopoverView: View {
     private var permissionBanner: some View {
         HStack(spacing: 8) {
             Image(systemName: "lock.shield")
-                .foregroundStyle(.orange)
+                .foregroundStyle(Theme.warning)
             Text("Allow Accessibility to focus Ghostty windows")
-                .font(.system(size: 11))
+                .font(Theme.Font.rowSubtitle)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 4)
@@ -38,7 +38,7 @@ struct MenuBarPopoverView: View {
                 app.openAccessibilitySettings()
             }
             .buttonStyle(.borderless)
-            .font(.system(size: 11))
+            .font(Theme.Font.rowSubtitle)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
@@ -141,21 +141,21 @@ private struct SessionRow: View {
             HStack(spacing: 10) {
                 Image(systemName: session.attached ? "circle.fill" : "circle")
                     .font(.system(size: 9))
-                    .foregroundStyle(session.attached ? Color.green : Color.secondary)
+                    .foregroundStyle(session.attached ? Theme.attached : Color.secondary)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(session.name)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(Theme.Font.rowTitle)
                         .lineLimit(1)
                         .truncationMode(.middle)
                     Text(folder(session.path))
-                        .font(.system(size: 11))
+                        .font(Theme.Font.rowSubtitle)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
                 Spacer(minLength: 8)
                 Text("\(session.windowCount)w")
-                    .font(.system(size: 11).monospacedDigit())
+                    .font(Theme.Font.metric)
                     .foregroundStyle(.secondary)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .semibold))
@@ -166,8 +166,8 @@ private struct SessionRow: View {
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
-            .background(hovering ? Color.primary.opacity(0.07) : .clear)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .background(hovering ? Theme.hoverFill : .clear)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.row))
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }

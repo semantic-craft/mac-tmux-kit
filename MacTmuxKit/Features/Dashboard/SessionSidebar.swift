@@ -97,22 +97,22 @@ private struct SessionSidebarRow: View {
         HStack(spacing: 8) {
             Image(systemName: session.attached ? "circle.fill" : "circle")
                 .font(.system(size: 8))
-                .foregroundStyle(session.attached ? Color.green : Color.secondary)
+                .foregroundStyle(session.attached ? Theme.attached : Color.secondary)
             VStack(alignment: .leading, spacing: 1) {
                 if editing {
                     RenameField(
                         text: $draft, prompt: "Session name",
-                        font: .system(size: 13, weight: .medium),
+                        font: Theme.Font.rowTitle,
                         onCommit: commit, onCancel: { editing = false }
                     )
                 } else {
                     Text(session.name)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(Theme.Font.rowTitle)
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
                 Text(folder(session.path))
-                    .font(.system(size: 11))
+                    .font(Theme.Font.rowSubtitle)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -128,7 +128,7 @@ private struct SessionSidebarRow: View {
                     .help("Switch and focus")
                 } else {
                     Text("\(session.windowCount)w")
-                        .font(.system(size: 11).monospacedDigit())
+                        .font(Theme.Font.metric)
                         .foregroundStyle(.secondary)
                 }
             }

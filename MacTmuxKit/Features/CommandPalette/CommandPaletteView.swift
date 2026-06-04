@@ -29,10 +29,10 @@ struct CommandPaletteView: View {
         }
         .frame(width: 560, height: 380)
         .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.panel))
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(Color.primary.opacity(0.08))
+            RoundedRectangle(cornerRadius: Theme.Radius.panel)
+                .strokeBorder(Theme.hairline)
         )
         .task { focused = true; await app.refresh() }
         .onChange(of: query) { _, _ in selection = 0 }
@@ -50,7 +50,7 @@ struct CommandPaletteView: View {
                 .foregroundStyle(.secondary)
             TextField("Switch session, or > to run a tmux command…", text: $query)
                 .textFieldStyle(.plain)
-                .font(.system(size: 16))
+                .font(Theme.Font.paletteField)
                 .focused($focused)
                 .onSubmit { runSelected() }
         }
@@ -71,7 +71,7 @@ struct CommandPaletteView: View {
                     }
                     if entries.isEmpty {
                         Text("No matches")
-                            .font(.system(size: 13))
+                            .font(Theme.Font.body)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 24)
@@ -89,22 +89,22 @@ struct CommandPaletteView: View {
         HStack(spacing: 10) {
             Image(systemName: item.icon)
                 .font(.system(size: 9))
-                .foregroundStyle(item.attached ? Color.green : (selected ? .white : .secondary))
+                .foregroundStyle(item.attached ? Theme.attached : (selected ? .primary : .secondary))
                 .frame(width: 14)
             Text(item.title)
-                .font(.system(size: 14))
-                .foregroundStyle(selected ? .white : .primary)
+                .font(Theme.Font.paletteRow)
+                .foregroundStyle(.primary)
             Spacer(minLength: 8)
             if !item.subtitle.isEmpty {
                 Text(item.subtitle)
-                    .font(.system(size: 11))
-                    .foregroundStyle(selected ? Color.white.opacity(0.85) : .secondary)
+                    .font(Theme.Font.rowSubtitle)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
-        .background(selected ? Color.accentColor : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 7))
+        .background(selected ? Theme.accentSoft : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.row))
     }
 
     // MARK: - Items

@@ -32,9 +32,9 @@ struct PaneDetailColumn: View {
         HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(pane.command)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(Theme.Font.detailTitle)
                 Text("\(pane.id)  ·  \(pane.width)x\(pane.height)  ·  pid \(pane.pid)")
-                    .font(.system(size: 11))
+                    .font(Theme.Font.metric)
                     .foregroundStyle(.secondary)
             }
             Spacer()
@@ -47,7 +47,7 @@ struct PaneDetailColumn: View {
             .buttonStyle(.borderless)
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 6))
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Theme.Radius.card))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -57,13 +57,13 @@ struct PaneDetailColumn: View {
     private var terminal: some View {
         ScrollView([.vertical, .horizontal]) {
             Text(content.isEmpty ? (loading ? "Loading…" : "(empty)") : content)
-                .font(.system(size: 12, design: .monospaced))
-                .foregroundStyle(content.isEmpty ? .secondary : .primary)
+                .font(Theme.Font.terminal)
+                .foregroundStyle(content.isEmpty ? Theme.terminalText.opacity(0.5) : Theme.terminalText)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .padding(12)
         }
-        .background(Color(nsColor: .textBackgroundColor))
+        .background(Theme.terminalBackground)
     }
 
     private func load(_ pane: TmuxPane) async {

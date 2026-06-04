@@ -122,27 +122,27 @@ private struct WindowHeaderRow: View {
                 .foregroundStyle(.secondary)
             if editing {
                 Text("\(window.index):")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(Theme.Font.sectionHeader)
                     .foregroundStyle(.secondary)
                 RenameField(
                     text: $draft, prompt: "Window name",
-                    font: .system(size: 11, weight: .semibold),
+                    font: Theme.Font.sectionHeader,
                     onCommit: commit, onCancel: { editing = false }
                 )
             } else {
                 Text("\(window.index): \(window.name)")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(Theme.Font.sectionHeader)
                 if window.active {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 9))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Theme.accent)
                 }
             }
             Spacer()
             if !editing {
                 RenamePencil(action: startEditing)
                 Text("\(window.paneCount)p")
-                    .font(.system(size: 10).monospacedDigit())
+                    .font(Theme.Font.metricSmall)
                     .foregroundStyle(.tertiary)
             }
         }
@@ -171,21 +171,21 @@ private struct PaneRow: View {
         HStack(spacing: 8) {
             Image(systemName: pane.active ? "square.fill" : "square")
                 .font(.system(size: 9))
-                .foregroundStyle(pane.active ? Color.accentColor : Color.secondary)
+                .foregroundStyle(pane.active ? Theme.accent : Color.secondary)
             VStack(alignment: .leading, spacing: 1) {
                 if editing {
                     RenameField(
                         text: $draft, prompt: "Pane title",
-                        font: .system(size: 13),
+                        font: Theme.Font.rowTitlePlain,
                         onCommit: commit, onCancel: { editing = false }
                     )
                 } else {
                     Text(app.paneName(pane))
-                        .font(.system(size: 13))
+                        .font(Theme.Font.rowTitlePlain)
                         .lineLimit(1)
                 }
                 Text(folderName(pane.path))
-                    .font(.system(size: 11))
+                    .font(Theme.Font.rowSubtitle)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -194,7 +194,7 @@ private struct PaneRow: View {
             if !editing {
                 RenamePencil(action: startEditing)
                 Text("\(pane.width)x\(pane.height)")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(Theme.Font.metricSmall)
                     .foregroundStyle(.tertiary)
             }
         }

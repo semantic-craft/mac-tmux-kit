@@ -40,7 +40,7 @@ struct ConsoleView: View {
             Image(systemName: "terminal").foregroundStyle(.secondary)
             TextField("tmux command, e.g. list-sessions", text: $command)
                 .textFieldStyle(.roundedBorder)
-                .font(.system(size: 13, design: .monospaced))
+                .font(Theme.Font.terminalInput)
                 .focused($focused)
                 .onSubmit(submit)
 
@@ -82,14 +82,14 @@ struct ConsoleView: View {
                 if let exitCode {
                     Label(exitCode == 0 ? "Success" : "Failed (exit \(exitCode))",
                           systemImage: exitCode == 0 ? "checkmark.circle" : "xmark.octagon")
-                        .font(.system(size: 12))
-                        .foregroundStyle(exitCode == 0 ? .green : .red)
+                        .font(Theme.Font.body)
+                        .foregroundStyle(exitCode == 0 ? Theme.success : Theme.danger)
                 }
                 if !output.isEmpty { block("stdout", output) }
                 if !stderr.isEmpty { block("stderr", stderr) }
                 if exitCode == nil {
                     Text("Output appears here.")
-                        .font(.system(size: 12))
+                        .font(Theme.Font.body)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -101,9 +101,9 @@ struct ConsoleView: View {
 
     private func block(_ title: String, _ text: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+            Text(title).font(Theme.Font.sectionHeader).foregroundStyle(.secondary)
             Text(text)
-                .font(.system(size: 12, design: .monospaced))
+                .font(Theme.Font.terminal)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }

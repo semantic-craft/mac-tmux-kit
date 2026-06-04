@@ -19,7 +19,7 @@ struct TextPromptSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(prompt.title).font(.system(size: 13, weight: .semibold))
+            Text(prompt.title).font(Theme.Font.bodyEmphasis)
             TextField(prompt.placeholder, text: $text)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 300)
