@@ -48,7 +48,7 @@ struct CommandPaletteView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 15))
                 .foregroundStyle(.secondary)
-            TextField("Switch session…", text: $query)
+            TextField("Switch session, or > to run a tmux command…", text: $query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 16))
                 .focused($focused)
@@ -110,18 +110,59 @@ struct CommandPaletteView: View {
     // MARK: - Items
 
     private var items: [CommandPaletteItem] {
-        let sessions = app.sessions.map { s in
-            CommandPaletteItem(
-                id: "session:\(s.id)",
-                title: s.name,
-                subtitle: s.attached ? "attached · \(s.windowCount)w" : "\(s.windowCount)w",
-                icon: s.attached ? "circle.fill" : "circle",
-                attached: s.attached
-            ) { await app.switchTo(s) }
+        let raw = query.trimmingCharacters(in: .whitespaces)
+
+        // Command mode: ">" or ":" runs a raw tmux command.
+        if let prefix = [">", ":"].first(where: { raw.hasPrefix($0) }) {
+            let cmd = String(raw.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces)
+            guard !cmd.isEmpty else {
+                return [hint("Type a tmux command after \(prefix)", "terminal")]
+            }
+            return [CommandPaletteItem(
+                id: "run", title: "Run: \(cmd)", subtitle: "tmux command",
+                icon: "terminal", attached: false
+            ) { _ = await app.runRaw(cmd) }]
         }
-        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !q.isEmpty else { return sessions }
-        return sessions.filter { $0.title.lowercased().contains(q) }
+
+        let lower = raw.lowercased()
+        var result = app.sessions
+            .filter { lower.isEmpty || $0.name.lowercased().contains(lower) }
+            .map { s in
+                CommandPaletteItem(
+                    id: "session:\(s.id)",
+                    title: s.name,
+                    subtitle: s.attached ? "attached · \(s.windowCount)w" : "\(s.windowCount)w",
+                    icon: s.attached ? "circle.fill" : "circle",
+                    attached: s.attached
+                ) { await app.switchTo(s) }
+            }
+
+        // Offer to create a session when the query is a fresh, valid name.
+        if isValidSessionName(raw),
+           !app.sessions.contains(where: { $0.name.caseInsensitiveCompare(raw) == .orderedSame }) {
+            result.append(CommandPaletteItem(
+                id: "create", title: "Create session \"\(raw)\"", subtitle: "new",
+                icon: "plus.circle", attached: false
+            ) { await app.newSession(name: raw, startDir: nil) })
+        }
+
+        // Static actions, filtered by the query.
+        let actions = [
+            CommandPaletteItem(id: "act:save", title: "Save layout", subtitle: "tmux-resurrect",
+                               icon: "tray.and.arrow.down", attached: false) { _ = await app.resurrectSave() },
+            CommandPaletteItem(id: "act:refresh", title: "Refresh", subtitle: "",
+                               icon: "arrow.clockwise", attached: false) { await app.refresh() },
+        ]
+        result += actions.filter { lower.isEmpty || $0.title.lowercased().contains(lower) }
+        return result
+    }
+
+    private func hint(_ text: String, _ icon: String) -> CommandPaletteItem {
+        CommandPaletteItem(id: "hint", title: text, subtitle: "", icon: icon, attached: false) {}
+    }
+
+    private func isValidSessionName(_ name: String) -> Bool {
+        !name.isEmpty && name.range(of: "[^A-Za-z0-9_-]", options: .regularExpression) == nil
     }
 
     // MARK: - Key handling

@@ -38,9 +38,20 @@ final class AppState {
         KeyboardShortcuts.onKeyDown(for: .toggleCommandPalette) { [weak controller] in
             controller?.toggle()
         }
+        KeyboardShortcuts.onKeyDown(for: .switchRecentSession) { [weak self] in
+            Task { await self?.switchToMostRecent() }
+        }
     }
 
     func showCommandPalette() { commandPalette?.show() }
+
+    /// Switch + focus the most recently active session that isn't already attached
+    /// (falls back to the most recent overall).
+    func switchToMostRecent() async {
+        if let target = sessions.first(where: { !$0.attached }) ?? sessions.first {
+            await switchTo(target)
+        }
+    }
     var tree: TmuxTree { TmuxTree(sessions: sessions, windows: windows, panes: panes) }
 
     func session(id: String?) -> TmuxSession? { sessions.first { $0.id == id } }

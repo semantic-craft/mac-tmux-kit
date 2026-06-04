@@ -100,11 +100,12 @@ private struct GeneralPane: View {
 private struct KeybindingsPane: View {
     var body: some View {
         Form {
-            Section("Global") {
+            Section("Global shortcuts") {
                 KeyboardShortcuts.Recorder("Command palette", name: .toggleCommandPalette)
+                KeyboardShortcuts.Recorder("Switch to recent session", name: .switchRecentSession)
             }
             Section {
-                Text("Press a shortcut to record it. The palette opens over any app.")
+                Text("Click a field and press a key combination to record it. These work over any app.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
