@@ -42,6 +42,13 @@ struct DashboardView: View {
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
+                Button { app.showCommandPalette() } label: {
+                    Image(systemName: "magnifyingglass")
+                }
+                .keyboardShortcut("k", modifiers: .command)
+                .help("Command Palette (⌘K)")
+            }
+            ToolbarItem(placement: .primaryAction) {
                 SettingsLink { Image(systemName: "gearshape") }
                     .help("Settings (⌘,)")
             }
