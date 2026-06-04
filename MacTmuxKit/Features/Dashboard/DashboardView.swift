@@ -27,13 +27,31 @@ struct DashboardView: View {
             }
         }
         .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: app.toast)
-        .task { await app.refresh() }
-        .onChange(of: selectedSessionId) { _, _ in selectedPaneId = nil }
+        .task {
+            await app.refresh()
+            // Open onto the most-recent session and its active pane, so the
+            // window is never an empty "Select a session / pane" shell.
+            if selectedSessionId == nil, let first = app.sessions.first {
+                selectedSessionId = first.id
+                selectedPaneId = defaultPaneId(for: first.id)
+            }
+        }
+        .onChange(of: selectedSessionId) { _, id in
+            // Selecting a session reveals its active pane immediately.
+            selectedPaneId = defaultPaneId(for: id)
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 SettingsLink { Image(systemName: "gearshape") }
                     .help("Settings (⌘,)")
             }
         }
+    }
+
+    /// The pane to show for a session: its active pane, else its first pane.
+    private func defaultPaneId(for sessionId: String?) -> String? {
+        guard let sessionId else { return nil }
+        let panes = app.panes.filter { $0.sessionId == sessionId }
+        return (panes.first(where: \.active) ?? panes.first)?.id
     }
 }
