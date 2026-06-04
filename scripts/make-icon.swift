@@ -3,10 +3,10 @@ import AppKit
 
 // Tmux Kit app icon generator.
 // Design (taste-skill: single accent, no AI-purple, no pure black, bold at 16px):
-// a dark slate squircle holding three parallel rounded "thread" bars of varying
-// length (= parallel sessions), each led by a status dot; one thread is system
-// green (the active/attached one, matching the app's UI), capped by a small
-// terminal cursor block.
+// a dark slate squircle holding the classic tmux pane split — one full-height
+// pane on the left, two stacked on the right, separated by dark "border" gaps.
+// The left pane is the active one: a green-tinted fill, a green outline, and a
+// small terminal cursor block (system green, matching the app's UI).
 
 func color(_ r: Int, _ g: Int, _ b: Int, _ a: CGFloat = 1) -> NSColor {
     NSColor(srgbRed: CGFloat(r) / 255, green: CGFloat(g) / 255, blue: CGFloat(b) / 255, alpha: a)
@@ -14,9 +14,10 @@ func color(_ r: Int, _ g: Int, _ b: Int, _ a: CGFloat = 1) -> NSColor {
 
 let bgTop = color(0x21, 0x29, 0x38)      // lighter slate (top)
 let bgBottom = color(0x0C, 0x10, 0x16)   // deep ink (bottom), not pure black
-let accent = color(0x30, 0xD1, 0x58)     // system green = active thread
-let barLight = color(0xCE, 0xD5, 0xDF)   // primary threads
-let barDim = color(0x8C, 0x96, 0xA6)     // a quieter third thread
+let accent = color(0x30, 0xD1, 0x58)            // system green = active pane
+let accentTint = color(0x30, 0xD1, 0x58, 0.16)  // active pane fill wash
+let surface = color(0x46, 0x53, 0x67)           // neutral pane
+let surfaceDim = color(0x37, 0x42, 0x53)         // quieter pane
 
 func render(_ px: Int) -> Data {
     let s = CGFloat(px)
@@ -42,45 +43,42 @@ func render(_ px: Int) -> Data {
     color(255, 255, 255, 0.06).setStroke()
     bg.stroke()
 
-    // Thread rows.
-    let pad = rect.width * 0.205
-    let dotR = rect.width * 0.043
-    let barH = rect.width * 0.072
-    let gap = rect.height * 0.105
-    let barStartX = rect.minX + pad + dotR * 2 + rect.width * 0.05
-    let maxBarW = rect.maxX - pad - barStartX
+    // Pane split: one full-height pane on the left (active), two stacked on the
+    // right, separated by dark gaps that read as tmux pane borders.
+    let content = rect.insetBy(dx: rect.width * 0.205, dy: rect.width * 0.205)
+    let gap = content.width * 0.055
+    let prad = content.width * 0.05
+    let leftW = content.width * 0.50 - gap / 2
 
-    let widths: [CGFloat] = [0.60, 0.86, 0.46]   // varying lengths
-    let dotColors = [barLight, accent, barDim]
-    let barColors = [barLight, accent, barDim]
-    let accentRow = 1
+    let left = CGRect(x: content.minX, y: content.minY, width: leftW, height: content.height)
+    let rx = left.maxX + gap
+    let rw = content.maxX - rx
+    let topH = content.height * 0.56 - gap / 2
+    let rTop = CGRect(x: rx, y: content.maxY - topH, width: rw, height: topH)
+    let rBot = CGRect(x: rx, y: content.minY, width: rw, height: content.height - topH - gap)
 
-    let groupH = barH * 3 + gap * 2
-    let topCenterY = rect.midY + groupH / 2 - barH / 2
+    surface.setFill()
+    NSBezierPath(roundedRect: rTop, xRadius: prad, yRadius: prad).fill()
+    surfaceDim.setFill()
+    NSBezierPath(roundedRect: rBot, xRadius: prad, yRadius: prad).fill()
 
-    for i in 0..<3 {
-        let cy = topCenterY - CGFloat(i) * (barH + gap)
+    // Active (left) pane: green-tinted fill + green outline + cursor block.
+    accentTint.setFill()
+    NSBezierPath(roundedRect: left, xRadius: prad, yRadius: prad).fill()
+    let outline = NSBezierPath(roundedRect: left, xRadius: prad, yRadius: prad)
+    outline.lineWidth = content.width * 0.020
+    accent.setStroke()
+    outline.stroke()
 
-        // Status dot.
-        let dotRect = CGRect(x: rect.minX + pad, y: cy - dotR, width: dotR * 2, height: dotR * 2)
-        dotColors[i].setFill()
-        NSBezierPath(ovalIn: dotRect).fill()
-
-        // Thread bar (capsule).
-        let w = widths[i] * maxBarW
-        let barRect = CGRect(x: barStartX, y: cy - barH / 2, width: w, height: barH)
-        barColors[i].setFill()
-        NSBezierPath(roundedRect: barRect, xRadius: barH / 2, yRadius: barH / 2).fill()
-
-        // Terminal cursor block at the end of the accent thread.
-        if i == accentRow {
-            let cur = barH * 0.92
-            let curRect = CGRect(x: barRect.maxX + rect.width * 0.03,
-                                 y: cy - cur / 2, width: cur, height: cur)
-            accent.setFill()
-            NSBezierPath(roundedRect: curRect, xRadius: cur * 0.22, yRadius: cur * 0.22).fill()
-        }
-    }
+    let curW = content.width * 0.085
+    let curH = content.width * 0.155
+    let cursor = CGRect(
+        x: left.minX + content.width * 0.085,
+        y: left.maxY - curH - content.width * 0.085,
+        width: curW, height: curH
+    )
+    accent.setFill()
+    NSBezierPath(roundedRect: cursor, xRadius: curW * 0.18, yRadius: curW * 0.18).fill()
 
     return rep.representation(using: .png, properties: [:])!
 }
