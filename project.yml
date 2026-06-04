@@ -24,7 +24,10 @@ settings:
     SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
-    # Local/ad-hoc signing — no Apple Developer account needed for personal use.
+    # Build ad-hoc; scripts/run.sh re-signs the finished .app with the local
+    # Apple Development certificate AFTER xcodebuild, giving a STABLE code identity
+    # so the Accessibility grant (TCC) survives rebuilds. (xcodebuild's built-in
+    # CodeSign runs after Run Script phases, so re-signing must be external.)
     CODE_SIGN_STYLE: Manual
     CODE_SIGN_IDENTITY: "-"
     DEVELOPMENT_TEAM: ""
