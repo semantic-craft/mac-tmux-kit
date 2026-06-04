@@ -22,6 +22,17 @@ struct MacTmuxKitApp: App {
         }
         .windowResizability(.contentMinSize)
 
+        Window("tmux Console", id: WindowID.console) {
+            ConsoleView()
+                .environment(appState)
+        }
+        .windowResizability(.contentMinSize)
+
+        Window("tmux Cheatsheet", id: WindowID.cheatsheet) {
+            CheatsheetView()
+        }
+        .windowResizability(.contentMinSize)
+
         Settings {
             SettingsView()
                 .environment(appState)
@@ -32,4 +43,6 @@ struct MacTmuxKitApp: App {
 /// Stable identifiers for `openWindow`.
 enum WindowID {
     static let dashboard = "dashboard"
+    static let console = "console"
+    static let cheatsheet = "cheatsheet"
 }
