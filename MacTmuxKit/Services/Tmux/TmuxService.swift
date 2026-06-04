@@ -46,6 +46,18 @@ final class TmuxService: Sendable {
         }
     }
 
+    /// The server's short host name (`#{host_short}`). tmux seeds every
+    /// `pane_title` with this, so the UI uses it to tell a default title from a
+    /// user-set one. Returns "" when no server is running.
+    func hostShort() async throws -> String {
+        do {
+            let out = try await run(["display-message", "-p", "#{host_short}"])
+            return out.trimmingCharacters(in: .whitespacesAndNewlines)
+        } catch TmuxError.serverNotRunning {
+            return ""
+        }
+    }
+
     /// Connected clients.
     func listClients() async throws -> [TmuxClient] {
         do {

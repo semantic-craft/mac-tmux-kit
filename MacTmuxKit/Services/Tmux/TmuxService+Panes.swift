@@ -48,6 +48,12 @@ extension TmuxService {
         try await run(["select-pane", "-t", paneId])
     }
 
+    /// Set a pane's title (`pane_title`). An empty string clears it back toward
+    /// the tmux default.
+    func setPaneTitle(paneId: String, to title: String) async throws {
+        try await run(["select-pane", "-t", paneId, "-T", title])
+    }
+
     /// Capture a pane's visible content (joined wrapped lines), trailing blank
     /// lines trimmed.
     func capturePane(paneId: String) async throws -> String {

@@ -110,38 +110,80 @@ struct WindowPaneColumn: View {
 // MARK: - Rows
 
 private struct WindowHeaderRow: View {
+    @Environment(AppState.self) private var app
     let window: TmuxWindow
+    @State private var editing = false
+    @State private var draft = ""
+
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "rectangle.split.3x1")
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
-            Text("\(window.index): \(window.name)")
-                .font(.system(size: 11, weight: .semibold))
-            if window.active {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 9))
-                    .foregroundStyle(Color.accentColor)
+            if editing {
+                Text("\(window.index):")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                RenameField(
+                    text: $draft, prompt: "Window name",
+                    font: .system(size: 11, weight: .semibold),
+                    onCommit: commit, onCancel: { editing = false }
+                )
+            } else {
+                Text("\(window.index): \(window.name)")
+                    .font(.system(size: 11, weight: .semibold))
+                if window.active {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 9))
+                        .foregroundStyle(Color.accentColor)
+                }
             }
             Spacer()
-            Text("\(window.paneCount)p")
-                .font(.system(size: 10).monospacedDigit())
-                .foregroundStyle(.tertiary)
+            if !editing {
+                RenamePencil(action: startEditing)
+                Text("\(window.paneCount)p")
+                    .font(.system(size: 10).monospacedDigit())
+                    .foregroundStyle(.tertiary)
+            }
         }
+    }
+
+    private func startEditing() {
+        draft = window.name
+        editing = true
+    }
+
+    private func commit() {
+        let name = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        editing = false
+        guard !name.isEmpty, name != window.name else { return }
+        Task { await app.renameWindow(window, to: name) }
     }
 }
 
 private struct PaneRow: View {
+    @Environment(AppState.self) private var app
     let pane: TmuxPane
+    @State private var editing = false
+    @State private var draft = ""
+
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: pane.active ? "square.fill" : "square")
                 .font(.system(size: 9))
                 .foregroundStyle(pane.active ? Color.accentColor : Color.secondary)
             VStack(alignment: .leading, spacing: 1) {
-                Text(pane.command)
-                    .font(.system(size: 13))
-                    .lineLimit(1)
+                if editing {
+                    RenameField(
+                        text: $draft, prompt: "Pane title",
+                        font: .system(size: 13),
+                        onCommit: commit, onCancel: { editing = false }
+                    )
+                } else {
+                    Text(app.paneName(pane))
+                        .font(.system(size: 13))
+                        .lineLimit(1)
+                }
                 Text(folderName(pane.path))
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
@@ -149,11 +191,26 @@ private struct PaneRow: View {
                     .truncationMode(.middle)
             }
             Spacer(minLength: 6)
-            Text("\(pane.width)x\(pane.height)")
-                .font(.system(size: 10, design: .monospaced))
-                .foregroundStyle(.tertiary)
+            if !editing {
+                RenamePencil(action: startEditing)
+                Text("\(pane.width)x\(pane.height)")
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(.tertiary)
+            }
         }
         .padding(.vertical, 2)
+    }
+
+    private func startEditing() {
+        draft = app.paneCustomName(pane)
+        editing = true
+    }
+
+    private func commit() {
+        let title = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        editing = false
+        guard title != app.paneCustomName(pane) else { return }
+        Task { await app.renamePane(pane, to: title) }
     }
 
     private func folderName(_ path: String) -> String {
