@@ -52,11 +52,6 @@ struct MenuBarPopoverView: View {
             if app.isLoading {
                 ProgressView().controlSize(.small)
             }
-            SettingsLink {
-                Image(systemName: "gearshape")
-            }
-            .buttonStyle(.borderless)
-            .help("Settings")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
@@ -88,20 +83,24 @@ struct MenuBarPopoverView: View {
     }
 
     private var footer: some View {
-        HStack {
+        HStack(spacing: 12) {
             Button {
                 openWindow(id: WindowID.dashboard)
                 // Dock + foreground activation handled by DashboardView.onAppear.
             } label: {
                 Label("Dashboard", systemImage: "rectangle.3.group")
             }
+            SettingsLink {
+                Label("Settings", systemImage: "gearshape")
+            }
+            .help("Settings (⌘,)")
+            Spacer()
             Button {
                 app.showCommandPalette()
             } label: {
-                Label("Search", systemImage: "magnifyingglass")
+                Image(systemName: "magnifyingglass")
             }
             .help("Command palette (⌥⌘T)")
-            Spacer()
             Button {
                 Task { await app.refresh() }
             } label: {
