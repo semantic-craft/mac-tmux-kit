@@ -42,6 +42,20 @@ If you find Warp too heavy and you don't want to abandon tmux for a replacement 
 - **Layout backup** — one-click save/restore via [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect), if you have it.
 - **Configurable global hotkeys** — bind the palette and "switch to recent session" to whatever you like.
 
+## Screenshots
+
+<!-- Drop curated screenshots in assets/screenshots/ and uncomment. Use a scratch
+     tmux session for the Dashboard so private session names/paths don't ship here. -->
+<!--
+<p align="center">
+  <img src="assets/screenshots/menubar.png" width="320">
+  <img src="assets/screenshots/palette.png" width="320">
+</p>
+<p align="center"><img src="assets/screenshots/dashboard.png" width="760"></p>
+-->
+
+_Coming soon._
+
 ## Why not just…
 
 | | Tmux Kit | [Warp](https://www.warp.dev) | [Zellij](https://zellij.dev) |
