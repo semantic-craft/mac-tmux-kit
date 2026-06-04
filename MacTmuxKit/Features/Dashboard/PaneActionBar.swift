@@ -17,7 +17,7 @@ struct PaneActionBar: View {
         VStack(spacing: 0) {
             if let pane {
                 Text("Pane \(pane.id) · \(pane.command)")
-                    .font(.system(size: 11))
+                    .font(Theme.Font.metric)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -66,7 +66,7 @@ struct PaneActionBar: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
-        .tint(destructive ? .red : nil)
+        .tint(destructive ? Theme.danger : nil)
     }
 
     private var swapMenu: some View {

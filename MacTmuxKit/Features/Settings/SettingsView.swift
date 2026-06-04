@@ -136,7 +136,7 @@ private struct FocusPane: View {
                     HStack(spacing: 6) {
                         Image(systemName: granted
                             ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                            .foregroundStyle(granted ? .green : .orange)
+                            .foregroundStyle(granted ? Theme.success : Theme.warning)
                         Text(granted ? "Granted" : "Not granted")
                     }
                 }

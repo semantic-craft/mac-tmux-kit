@@ -19,8 +19,8 @@ struct ToastInfo: Identifiable, Equatable {
         }
         var tint: Color {
             switch self {
-            case .success: .green
-            case .failure: .orange
+            case .success: Theme.success
+            case .failure: Theme.warning
             }
         }
     }
@@ -36,13 +36,13 @@ struct ToastView: View {
             Image(systemName: info.kind.symbol)
                 .foregroundStyle(info.kind.tint)
             Text(info.text)
-                .font(.system(size: 13))
+                .font(Theme.Font.body)
                 .lineLimit(1)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
         .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08)))
+        .overlay(Capsule().strokeBorder(Theme.hairline))
         .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
         .padding(.bottom, 18)
     }

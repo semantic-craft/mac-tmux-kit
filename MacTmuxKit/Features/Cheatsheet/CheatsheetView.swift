@@ -46,15 +46,15 @@ private struct CheatRow: View {
     var body: some View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.title).font(.system(size: 13))
+                Text(item.title).font(Theme.Font.body)
                 if !item.note.isEmpty {
-                    Text(item.note).font(.system(size: 11)).foregroundStyle(.secondary)
+                    Text(item.note).font(Theme.Font.rowSubtitle).foregroundStyle(.secondary)
                 }
             }
             Spacer(minLength: 12)
             Text(copied ? "Copied" : item.keys)
-                .font(.system(size: 12, design: .monospaced))
-                .foregroundStyle(copied ? .green : .secondary)
+                .font(Theme.Font.terminal)
+                .foregroundStyle(copied ? Theme.success : .secondary)
                 .textSelection(.enabled)
         }
         .contentShape(Rectangle())
