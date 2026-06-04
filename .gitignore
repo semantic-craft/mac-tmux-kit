@@ -1,0 +1,15 @@
+# XcodeGen generates this from project.yml — regenerate with `xcodegen generate`.
+*.xcodeproj/
+
+# Xcode / SwiftPM
+.DS_Store
+DerivedData/
+build/
+.build/
+.swiftpm/
+*.xcuserstate
+xcuserdata/
+
+# Secrets / local config
+*.env
+.env
