@@ -56,6 +56,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.gakalone.MacTmuxKit
         PRODUCT_NAME: MacTmuxKit
         INFOPLIST_KEY_NSHumanReadableCopyright: ""
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
 schemes:
   MacTmuxKit:
