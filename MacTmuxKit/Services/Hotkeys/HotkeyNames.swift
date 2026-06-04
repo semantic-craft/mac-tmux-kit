@@ -8,4 +8,6 @@ extension KeyboardShortcuts.Name {
         "toggleCommandPalette",
         default: .init(.t, modifiers: [.command, .option])
     )
+    /// Switch + focus the most recently active other session. No default binding.
+    static let switchRecentSession = Self("switchRecentSession")
 }
