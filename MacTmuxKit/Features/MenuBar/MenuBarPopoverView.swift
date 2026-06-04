@@ -85,8 +85,7 @@ struct MenuBarPopoverView: View {
     private var footer: some View {
         HStack(spacing: 14) {
             Button {
-                openWindow(id: WindowID.dashboard)
-                // Dock + foreground activation handled by DashboardView.onAppear.
+                app.showDashboard()
             } label: {
                 Label("Dashboard", systemImage: "rectangle.3.group")
             }

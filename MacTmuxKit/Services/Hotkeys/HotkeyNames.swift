@@ -10,4 +10,10 @@ extension KeyboardShortcuts.Name {
     )
     /// Switch + focus the most recently active other session. No default binding.
     static let switchRecentSession = Self("switchRecentSession")
+
+    /// Open / focus the Dashboard window. Default: Hyper+D (⌘⌃⌥⇧D).
+    static let toggleDashboard = Self(
+        "toggleDashboard",
+        default: .init(.d, modifiers: [.command, .control, .option, .shift])
+    )
 }

@@ -60,6 +60,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
 private struct GeneralPane: View {
     @AppStorage("tmuxBinaryPath") private var tmuxOverride = ""
+    @AppStorage("showMenuBarIcon") private var showMenuBarIcon = true
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     private var detectedPath: String {
@@ -73,6 +74,12 @@ private struct GeneralPane: View {
                 LabeledContent("Detected", value: detectedPath)
                 TextField("Override path", text: $tmuxOverride, prompt: Text("Auto-detect"))
                 Text("Leave blank to auto-detect. Changes apply on next launch.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Menu bar") {
+                Toggle("Show menu bar icon", isOn: $showMenuBarIcon)
+                Text("When hidden, summon the app with your global shortcuts — Dashboard (⌘⌃⌥⇧D) and Command palette (⌥⌘T). Set them under Keybindings.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -102,6 +109,7 @@ private struct KeybindingsPane: View {
         Form {
             Section("Global shortcuts") {
                 KeyboardShortcuts.Recorder("Command palette", name: .toggleCommandPalette)
+                KeyboardShortcuts.Recorder("Open Dashboard", name: .toggleDashboard)
                 KeyboardShortcuts.Recorder("Switch to recent session", name: .switchRecentSession)
             }
             Section {

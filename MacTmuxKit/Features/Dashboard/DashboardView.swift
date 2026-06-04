@@ -21,7 +21,11 @@ struct DashboardView: View {
         .frame(minWidth: 860, minHeight: 500)
         .task { await app.refresh() }
         .onChange(of: selectedSessionId) { _, _ in selectedPaneId = nil }
-        .onAppear { AppActivationPolicy.enter() }
-        .onDisappear { AppActivationPolicy.leave() }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                SettingsLink { Image(systemName: "gearshape") }
+                    .help("Settings (⌘,)")
+            }
+        }
     }
 }
