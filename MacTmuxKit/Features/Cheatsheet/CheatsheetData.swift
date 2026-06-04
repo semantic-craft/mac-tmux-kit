@@ -1,6 +1,7 @@
 import Foundation
 
-/// One cheatsheet entry. `keys` is the copyable shortcut or command string.
+/// One cheatsheet entry (main app's own copy — kept independent from the
+/// standalone Cheatsheet app, which has its own).
 struct CheatItem: Identifiable, Hashable {
     let section: String
     let title: String
@@ -9,7 +10,7 @@ struct CheatItem: Identifiable, Hashable {
     var id: String { section + "/" + title }
 }
 
-/// Stock tmux defaults (prefix = C-b unless rebound). Grouped by section.
+/// Stock tmux defaults (prefix = C-b unless rebound), grouped by section.
 enum Cheatsheet {
     static let sections = [
         "Sessions", "Windows", "Panes", "Copy mode", "Misc", "Command mode", "Resurrect", "Config",
