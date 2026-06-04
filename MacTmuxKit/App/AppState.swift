@@ -179,6 +179,30 @@ final class AppState {
         await run { try await $0.swapPanes(source: p.id, target: neighbor.id) }
     }
 
+    // MARK: - tmux-resurrect
+
+    var resurrectScriptsDir: URL? {
+        ResurrectLocator.scriptsDir(override: UserDefaults.standard.string(forKey: "resurrectScriptsPath"))
+    }
+    var resurrectAvailable: Bool { resurrectScriptsDir != nil }
+    func resurrectLastSaved() -> Date? { ResurrectLocator.lastSaveDate() }
+
+    /// Returns nil on success, else an error message.
+    func resurrectSave() async -> String? {
+        guard let service, let dir = resurrectScriptsDir else { return "tmux-resurrect not found." }
+        do { try await service.resurrectSave(scriptsDir: dir); return nil }
+        catch { return message(for: error) }
+    }
+
+    func resurrectRestore() async -> String? {
+        guard let service, let dir = resurrectScriptsDir else { return "tmux-resurrect not found." }
+        let result: String?
+        do { try await service.resurrectRestore(scriptsDir: dir); result = nil }
+        catch { result = message(for: error) }
+        await refresh()
+        return result
+    }
+
     /// Run a raw tmux command from the console, then refresh (it may mutate).
     func runRaw(_ commandLine: String) async -> ProcessResult {
         guard let service else {

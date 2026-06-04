@@ -18,6 +18,26 @@ extension TmuxService {
         }
     }
 
+    // MARK: - tmux-resurrect
+
+    func resurrectSave(scriptsDir: URL) async throws {
+        try await runShellScript(scriptsDir.appendingPathComponent("save.sh").path)
+    }
+
+    func resurrectRestore(scriptsDir: URL) async throws {
+        try await runShellScript(scriptsDir.appendingPathComponent("restore.sh").path)
+    }
+
+    /// `tmux run-shell <arg>` runs the arg through /bin/sh, so the path is
+    /// shell-quoted to survive spaces.
+    private func runShellScript(_ path: String) async throws {
+        _ = try await run(["run-shell", Self.shellQuote(path)])
+    }
+
+    static func shellQuote(_ s: String) -> String {
+        "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+
     /// Split a command line into tokens, honoring single and double quotes.
     static func tokenize(_ line: String) -> [String] {
         var tokens: [String] = []

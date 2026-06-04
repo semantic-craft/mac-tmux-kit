@@ -20,7 +20,7 @@ struct MenuBarPopoverView: View {
             }
             footer
         }
-        .frame(width: 340)
+        .frame(width: 360)
         .task { await app.refresh() }
     }
 
@@ -83,47 +83,41 @@ struct MenuBarPopoverView: View {
     }
 
     private var footer: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             Button {
                 openWindow(id: WindowID.dashboard)
                 // Dock + foreground activation handled by DashboardView.onAppear.
             } label: {
                 Label("Dashboard", systemImage: "rectangle.3.group")
             }
+            .fixedSize()
             SettingsLink {
                 Label("Settings", systemImage: "gearshape")
             }
+            .fixedSize()
             .help("Settings (⌘,)")
+            Spacer()
             Menu {
-                Button {
-                    openWindow(id: WindowID.console)
-                } label: {
+                Button { app.showCommandPalette() } label: {
+                    Label("Command Palette", systemImage: "magnifyingglass")
+                }
+                Divider()
+                Button { openWindow(id: WindowID.console) } label: {
                     Label("Console", systemImage: "terminal")
                 }
-                Button {
-                    openWindow(id: WindowID.cheatsheet)
-                } label: {
+                Button { openWindow(id: WindowID.cheatsheet) } label: {
                     Label("Cheatsheet", systemImage: "book")
+                }
+                Divider()
+                Button { Task { await app.refresh() } } label: {
+                    Label("Refresh", systemImage: "arrow.clockwise")
                 }
             } label: {
                 Image(systemName: "ellipsis.circle")
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
-            .help("More tools")
-            Spacer()
-            Button {
-                app.showCommandPalette()
-            } label: {
-                Image(systemName: "magnifyingglass")
-            }
-            .help("Command palette (⌥⌘T)")
-            Button {
-                Task { await app.refresh() }
-            } label: {
-                Image(systemName: "arrow.clockwise")
-            }
-            .help("Refresh")
+            .help("More")
             Button("Quit") {
                 NSApplication.shared.terminate(nil)
             }
