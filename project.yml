@@ -1,0 +1,57 @@
+# XcodeGen project spec — regenerate the .xcodeproj with: xcodegen generate
+# The .xcodeproj is git-ignored; project.yml is the source of truth.
+name: MacTmuxKit
+options:
+  bundleIdPrefix: com.gakalone
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+packages:
+  # Local pure-logic core (domain models, format strings, parser). No network.
+  TmuxKitCore:
+    path: Core
+
+settings:
+  base:
+    # Swift 5 language mode for now (compiler is 6.3). Tighten to Swift 6 strict
+    # concurrency in a later phase once Process/AX bridging is isolated.
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Local/ad-hoc signing — no Apple Developer account needed for personal use.
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: ""
+    # Non-sandboxed (App Sandbox is incompatible with arbitrary Process + Accessibility).
+    ENABLE_APP_SANDBOX: NO
+
+targets:
+  MacTmuxKit:
+    type: application
+    platform: macOS
+    sources:
+      - path: MacTmuxKit
+    dependencies:
+      - package: TmuxKitCore
+        product: TmuxKitCore
+    info:
+      path: Support/Info.plist
+      properties:
+        LSUIElement: true
+        CFBundleDisplayName: Tmux Kit
+        NSAccessibilityUsageDescription: "Tmux Kit uses Accessibility access to find and raise the Ghostty terminal window for the tmux session you switch to."
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gakalone.MacTmuxKit
+        PRODUCT_NAME: MacTmuxKit
+        INFOPLIST_KEY_NSHumanReadableCopyright: ""
+
+schemes:
+  MacTmuxKit:
+    build:
+      targets:
+        MacTmuxKit: all
+    run:
+      config: Debug
