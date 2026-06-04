@@ -16,6 +16,9 @@ final class AppState {
     private(set) var panes: [TmuxPane] = []
     private(set) var statusMessage: String?
     private(set) var isLoading = false
+    /// Server short host name, used to tell a default pane title from a user-set
+    /// one (tmux seeds `pane_title` with the host). Refreshed with the tree.
+    private(set) var hostShort = ""
 
     let service: TmuxService?
     let focusService = GhosttyFocusService()
@@ -79,10 +82,12 @@ final class AppState {
             async let s = service.listSessions()
             async let w = service.listAllWindows()
             async let p = service.listAllPanes()
-            let (ss, ww, pp) = try await (s, w, p)
+            async let h = service.hostShort()
+            let (ss, ww, pp, hh) = try await (s, w, p, h)
             sessions = ss.sorted { $0.activity > $1.activity }
             windows = ww
             panes = pp
+            hostShort = hh
             statusMessage = sessions.isEmpty ? "No tmux sessions." : nil
         } catch {
             statusMessage = message(for: error)
@@ -183,6 +188,22 @@ final class AppState {
         await run { try await $0.splitWindow(paneId: p.id, horizontal: horizontal, cwd: p.path) }
     }
     func breakPane(_ p: TmuxPane) async { await run { try await $0.breakPane(paneId: p.id) } }
+
+    /// The pane's display label: its custom title when set, else its command.
+    func paneName(_ p: TmuxPane) -> String {
+        paneDisplayName(title: p.title, command: p.command, host: hostShort)
+    }
+
+    /// The pane's user-set title, or "" when it is still the tmux default
+    /// (used to seed the rename field).
+    func paneCustomName(_ p: TmuxPane) -> String {
+        paneCustomTitle(title: p.title, command: p.command, host: hostShort) ?? ""
+    }
+
+    /// Rename a pane by setting its `pane_title`.
+    func renamePane(_ p: TmuxPane, to title: String) async {
+        await run { try await $0.setPaneTitle(paneId: p.id, to: title) }
+    }
     func killPane(_ p: TmuxPane) async { await run { try await $0.killPane(paneId: p.id) } }
     func killOtherPanes(_ p: TmuxPane) async { await run { try await $0.killOtherPanes(paneId: p.id) } }
     func markPane(_ p: TmuxPane) async { await run { try await $0.markPane(paneId: p.id) } }

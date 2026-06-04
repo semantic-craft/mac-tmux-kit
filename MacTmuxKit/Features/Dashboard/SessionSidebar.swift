@@ -90,6 +90,8 @@ private struct SessionSidebarRow: View {
     @Environment(AppState.self) private var app
     let session: TmuxSession
     @State private var hovering = false
+    @State private var editing = false
+    @State private var draft = ""
 
     var body: some View {
         HStack(spacing: 8) {
@@ -97,10 +99,18 @@ private struct SessionSidebarRow: View {
                 .font(.system(size: 8))
                 .foregroundStyle(session.attached ? Color.green : Color.secondary)
             VStack(alignment: .leading, spacing: 1) {
-                Text(session.name)
-                    .font(.system(size: 13, weight: .medium))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+                if editing {
+                    RenameField(
+                        text: $draft, prompt: "Session name",
+                        font: .system(size: 13, weight: .medium),
+                        onCommit: commit, onCancel: { editing = false }
+                    )
+                } else {
+                    Text(session.name)
+                        .font(.system(size: 13, weight: .medium))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
                 Text(folder(session.path))
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
@@ -108,20 +118,35 @@ private struct SessionSidebarRow: View {
                     .truncationMode(.middle)
             }
             Spacer(minLength: 6)
-            if hovering {
-                Button { Task { await app.switchTo(session) } } label: {
-                    Image(systemName: "arrow.up.forward.app")
+            if !editing {
+                RenamePencil(action: startEditing)
+                if hovering {
+                    Button { Task { await app.switchTo(session) } } label: {
+                        Image(systemName: "arrow.up.forward.app")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Switch and focus")
+                } else {
+                    Text("\(session.windowCount)w")
+                        .font(.system(size: 11).monospacedDigit())
+                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.borderless)
-                .help("Switch and focus")
-            } else {
-                Text("\(session.windowCount)w")
-                    .font(.system(size: 11).monospacedDigit())
-                    .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 3)
         .onHover { hovering = $0 }
+    }
+
+    private func startEditing() {
+        draft = session.name
+        editing = true
+    }
+
+    private func commit() {
+        let name = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        editing = false
+        guard !name.isEmpty, name != session.name else { return }
+        Task { await app.renameSession(session, to: name) }
     }
 
     private func folder(_ path: String) -> String {
