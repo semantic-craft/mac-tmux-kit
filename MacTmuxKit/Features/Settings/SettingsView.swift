@@ -79,7 +79,7 @@ private struct GeneralPane: View {
             }
             Section("Menu bar") {
                 Toggle("Show menu bar icon", isOn: $showMenuBarIcon)
-                Text("When hidden, summon the app with your global shortcuts — Dashboard (⌘⌃⌥⇧D) and Command palette (⌥⌘T). Set them under Keybindings.")
+                Text("When hidden, summon the app with your global shortcuts: Dashboard (⌘⌃⌥⇧D) and Command palette (⌥⌘T). Set them under Keybindings.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
