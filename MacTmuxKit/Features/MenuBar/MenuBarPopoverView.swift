@@ -94,6 +94,23 @@ struct MenuBarPopoverView: View {
                 Label("Settings", systemImage: "gearshape")
             }
             .help("Settings (⌘,)")
+            Menu {
+                Button {
+                    openWindow(id: WindowID.console)
+                } label: {
+                    Label("Console", systemImage: "terminal")
+                }
+                Button {
+                    openWindow(id: WindowID.cheatsheet)
+                } label: {
+                    Label("Cheatsheet", systemImage: "book")
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .help("More tools")
             Spacer()
             Button {
                 app.showCommandPalette()

@@ -179,6 +179,16 @@ final class AppState {
         await run { try await $0.swapPanes(source: p.id, target: neighbor.id) }
     }
 
+    /// Run a raw tmux command from the console, then refresh (it may mutate).
+    func runRaw(_ commandLine: String) async -> ProcessResult {
+        guard let service else {
+            return ProcessResult(stdout: "", stderr: TmuxError.binaryNotFound.userMessage, exitCode: -1)
+        }
+        let result = await service.runRaw(commandLine)
+        await refresh()
+        return result
+    }
+
     /// Capture a pane's visible content for the detail view.
     func capture(_ p: TmuxPane) async -> String {
         guard let service else { return "" }
