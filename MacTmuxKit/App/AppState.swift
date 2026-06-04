@@ -1,6 +1,7 @@
 import Foundation
 import AppKit
 import Observation
+import KeyboardShortcuts
 import TmuxKitCore
 
 /// Top-level observable state shared by every UI surface (menu bar, palette,
@@ -18,13 +19,28 @@ final class AppState {
 
     let service: TmuxService?
     let focusService = GhosttyFocusService()
+    private var commandPalette: CommandPaletteController?
 
     init() {
-        service = TmuxBinaryLocator.locate().map { TmuxService(binary: $0) }
+        let override = UserDefaults.standard.string(forKey: "tmuxBinaryPath")
+        service = TmuxBinaryLocator.locate(override: override).map { TmuxService(binary: $0) }
+        setupHotkeys()
     }
 
     var tmuxAvailable: Bool { service != nil }
     var hasAXPermission: Bool { focusService.hasPermission }
+
+    // MARK: - Command palette / hotkeys
+
+    private func setupHotkeys() {
+        let controller = CommandPaletteController(appState: self)
+        commandPalette = controller
+        KeyboardShortcuts.onKeyDown(for: .toggleCommandPalette) { [weak controller] in
+            controller?.toggle()
+        }
+    }
+
+    func showCommandPalette() { commandPalette?.show() }
     var tree: TmuxTree { TmuxTree(sessions: sessions, windows: windows, panes: panes) }
 
     func session(id: String?) -> TmuxSession? { sessions.first { $0.id == id } }
@@ -104,6 +120,15 @@ final class AppState {
     func openAccessibilitySettings() {
         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
         NSWorkspace.shared.open(url)
+    }
+
+    /// Set the running tmux server to title windows by session (`tmux:#S`), which
+    /// makes Ghostty window focus-matching reliable. Opt-in (Settings → Focus).
+    func installTitleFormat() async {
+        await run {
+            try await $0.run(["set-option", "-g", "set-titles", "on"])
+            try await $0.run(["set-option", "-g", "set-titles-string", "tmux:#S"])
+        }
     }
     func newSession(name: String, startDir: String?) async {
         await run { try await $0.newSession(name: name, startDir: startDir) }
