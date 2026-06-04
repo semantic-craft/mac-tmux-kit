@@ -32,6 +32,9 @@ final class AppState {
         let override = UserDefaults.standard.string(forKey: "tmuxBinaryPath")
         service = TmuxBinaryLocator.locate(override: override).map { TmuxService(binary: $0) }
         setupHotkeys()
+        // Resolve the Ghostty-derived theme off the main thread so the first view
+        // render never blocks on the `ghostty +show-config` subprocess.
+        Task.detached(priority: .utility) { _ = Theme.ghostty }
     }
 
     var tmuxAvailable: Bool { service != nil }

@@ -5,9 +5,10 @@ import SwiftUI
 /// Borrowed language (researched from the Open Design system library):
 /// - **Linear**: structural restraint — a single brand accent, hairline borders
 ///   drawn in white-opacity, hierarchy carried by luminance not hue.
-/// - **Your terminal**: the captured-pane view mirrors the user's actual Ghostty
-///   theme (currently Flexoki Light — paper #fffcf0 / ink #100f0f), so the in-app
-///   preview looks identical to the real terminal.
+/// - **Your terminal**: colors are read live from the user's Ghostty theme at
+///   launch (`ghostty +show-config`, see GhosttyTheme) — the captured-pane view,
+///   accent, status, and selection all track whatever terminal theme they run,
+///   falling back to baked Flexoki Light.
 /// - **Vercel / Geist**: a monospaced "developer console" voice for every
 ///   technical label (counts, dimensions, ids, pids).
 ///
@@ -16,34 +17,38 @@ import SwiftUI
 /// brand accent and the mono label voice are opinionated.
 enum Theme {
 
-    // MARK: - Brand accent
+    // MARK: - Palette (resolved from the user's live Ghostty theme)
     //
-    // The single identity color, sourced from the user's Ghostty theme
-    // (`theme = "Flexoki Light"`). Swap THIS ONE LINE to restyle:
-    //   • Flexoki green (current): 0x66800B — the terminal palette's green.
-    //   • Flexoki blue: 0x205EA6 — a calmer, distinct brand accent.
-    static let accent = Color(hex: 0x66800B)
+    // Read once at launch from `ghostty +show-config` (see GhosttyTheme), so the
+    // GUI tracks whatever terminal theme the user runs — light or dark. Falls back
+    // to baked Flexoki Light when Ghostty isn't installed or readable. The whole
+    // identity is just the ANSI-slot → role mapping below; `ghostty.blue` is the
+    // obvious alternate accent.
+    static let ghostty = GhosttyTheme.resolve() ?? .flexokiFallback
+
+    /// Brand accent — the terminal's green (active pane/window, attached, focus).
+    static var accent: Color { ghostty.green }
     /// Selected-row fill — Ghostty's own `selection-background`, so a highlighted
     /// row matches a text selection in the real terminal.
-    static let accentSoft = Color(hex: 0xCECDC3)
+    static var accentSoft: Color { ghostty.selection }
 
     // MARK: - Status (state only, never decoration)
-    static let attached = accent
-    static let success = Color(hex: 0x66800B)   // Flexoki green
-    static let warning = Color(hex: 0xAD8301)   // Flexoki yellow
-    static let danger = Color(hex: 0xAF3029)    // Flexoki red
+    static var attached: Color { ghostty.green }
+    static var success: Color { ghostty.green }
+    static var warning: Color { ghostty.yellow }
+    static var danger: Color { ghostty.red }
 
     // MARK: - Structure (Linear's thin luminance-borders)
     static let hairline = Color.primary.opacity(0.08)
     /// Subtle fill for hovered custom rows (Linear's near-zero white wash).
     static let hoverFill = Color.primary.opacity(0.07)
 
-    // MARK: - Terminal canvas (mirrors the user's Ghostty theme: Flexoki Light)
+    // MARK: - Terminal canvas (= the user's Ghostty bg/fg, so preview == terminal)
     /// Captured-pane background = Ghostty `background`. Pinned (not system-adaptive)
     /// so the pane preview looks identical to the real terminal in any app mode.
-    static let terminalBackground = Color(hex: 0xFFFCF0)   // Flexoki paper
+    static var terminalBackground: Color { ghostty.background }
     /// Captured-pane text = Ghostty `foreground`.
-    static let terminalText = Color(hex: 0x100F0F)         // Flexoki ink
+    static var terminalText: Color { ghostty.foreground }
 
     // MARK: - Metrics
     enum Radius {
