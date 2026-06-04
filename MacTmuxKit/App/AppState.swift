@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import Observation
 import TmuxKitCore
 
@@ -16,12 +17,14 @@ final class AppState {
     private(set) var isLoading = false
 
     let service: TmuxService?
+    let focusService = GhosttyFocusService()
 
     init() {
         service = TmuxBinaryLocator.locate().map { TmuxService(binary: $0) }
     }
 
     var tmuxAvailable: Bool { service != nil }
+    var hasAXPermission: Bool { focusService.hasPermission }
     var tree: TmuxTree { TmuxTree(sessions: sessions, windows: windows, panes: panes) }
 
     func session(id: String?) -> TmuxSession? { sessions.first { $0.id == id } }
@@ -60,9 +63,47 @@ final class AppState {
 
     // MARK: - Session actions
 
+    /// Switch to a session and bring its Ghostty window forward.
+    /// - attached session: raise its existing window.
+    /// - detached session: always open a NEW Ghostty window attached to it
+    ///   (never hijacks an existing window), then raise it once it appears.
     func switchTo(_ s: TmuxSession) async {
-        await run { try await $0.switchClient(toSession: s.id) }
-        // Ghostty window focusing is wired in the next step.
+        guard let service else { return }
+        if s.attached {
+            focusOrPrompt(session: s.name)
+        } else {
+            do {
+                try await GhosttyLauncher.launch(tmuxBinary: service.binary, attachingToSession: s.id)
+            } catch {
+                statusMessage = message(for: error)
+                await refresh()
+                return
+            }
+            if focusService.hasPermission {
+                // The new window needs a moment to attach and set its title.
+                for _ in 0..<10 {
+                    try? await Task.sleep(nanoseconds: 300_000_000)
+                    if focusService.focusWindow(forSession: s.name) { break }
+                }
+            } else {
+                focusService.ensurePermission()
+            }
+        }
+        await refresh()
+    }
+
+    private func focusOrPrompt(session name: String) {
+        let focused = focusService.focusWindow(forSession: name)
+        if !focused, !focusService.hasPermission {
+            statusMessage = "Enable Accessibility for Tmux Kit to focus its window."
+        }
+    }
+
+    func requestAXPermission() { focusService.ensurePermission() }
+
+    func openAccessibilitySettings() {
+        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
+        NSWorkspace.shared.open(url)
     }
     func newSession(name: String, startDir: String?) async {
         await run { try await $0.newSession(name: name, startDir: startDir) }

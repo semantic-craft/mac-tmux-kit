@@ -14,10 +14,34 @@ struct MenuBarPopoverView: View {
             Divider()
             content
             Divider()
+            if !app.hasAXPermission {
+                permissionBanner
+                Divider()
+            }
             footer
         }
-        .frame(width: 300)
+        .frame(width: 340)
         .task { await app.refresh() }
+    }
+
+    private var permissionBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "lock.shield")
+                .foregroundStyle(.orange)
+            Text("Allow Accessibility to focus Ghostty windows")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 4)
+            Button("Enable") {
+                app.requestAXPermission()
+                app.openAccessibilitySettings()
+            }
+            .buttonStyle(.borderless)
+            .font(.system(size: 11))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
     }
 
     private var header: some View {
@@ -30,23 +54,24 @@ struct MenuBarPopoverView: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
     }
 
     @ViewBuilder
     private var content: some View {
         if !app.sessions.isEmpty {
             ScrollView {
-                LazyVStack(spacing: 2) {
+                LazyVStack(spacing: 3) {
                     ForEach(app.sessions) { session in
                         SessionRow(session: session) {
                             Task { await app.switchTo(session) }
                         }
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 6)
+                .padding(.horizontal, 8)
             }
-            .frame(maxHeight: 320)
+            .frame(maxHeight: 380)
         } else {
             Text(app.statusMessage ?? "No tmux sessions.")
                 .font(.callout)
@@ -61,7 +86,7 @@ struct MenuBarPopoverView: View {
         HStack {
             Button {
                 openWindow(id: WindowID.dashboard)
-                NSApplication.shared.activate()
+                // Dock + foreground activation handled by DashboardView.onAppear.
             } label: {
                 Label("Dashboard", systemImage: "rectangle.3.group")
             }
@@ -78,11 +103,12 @@ struct MenuBarPopoverView: View {
         }
         .buttonStyle(.borderless)
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
     }
 }
 
-/// One session row. Filled green dot = a client is attached.
+/// One session row: status dot + name + current folder, with the window count.
+/// Filled green dot = a client is attached.
 private struct SessionRow: View {
     let session: TmuxSession
     let onSwitch: () -> Void
@@ -91,26 +117,42 @@ private struct SessionRow: View {
 
     var body: some View {
         Button(action: onSwitch) {
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Image(systemName: session.attached ? "circle.fill" : "circle")
-                    .font(.system(size: 8))
+                    .font(.system(size: 9))
                     .foregroundStyle(session.attached ? Color.green : Color.secondary)
-                Text(session.name)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(session.name)
+                        .font(.system(size: 13, weight: .medium))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Text(folder(session.path))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
                 Spacer(minLength: 8)
                 Text("\(session.windowCount)w")
-                    .font(.caption.monospacedDigit())
+                    .font(.system(size: 11).monospacedDigit())
                     .foregroundStyle(.secondary)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                    .opacity(hovering ? 1 : 0)
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.vertical, 8)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
-            .background(hovering ? Color.accentColor.opacity(0.15) : .clear)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .background(hovering ? Color.primary.opacity(0.07) : .clear)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
+    }
+
+    private func folder(_ path: String) -> String {
+        path.isEmpty ? "~" : URL(fileURLWithPath: path).lastPathComponent
     }
 }
