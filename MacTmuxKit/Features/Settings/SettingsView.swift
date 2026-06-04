@@ -115,16 +115,17 @@ private struct KeybindingsPane: View {
 
 private struct FocusPane: View {
     @Environment(AppState.self) private var app
+    @State private var granted = AccessibilityBridge.isTrusted
 
     var body: some View {
         Form {
             Section("Accessibility") {
                 LabeledContent("Permission") {
                     HStack(spacing: 6) {
-                        Image(systemName: app.hasAXPermission
+                        Image(systemName: granted
                             ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                            .foregroundStyle(app.hasAXPermission ? .green : .orange)
-                        Text(app.hasAXPermission ? "Granted" : "Not granted")
+                            .foregroundStyle(granted ? .green : .orange)
+                        Text(granted ? "Granted" : "Not granted")
                     }
                 }
                 Button("Open Accessibility Settings") { app.openAccessibilitySettings() }
@@ -143,5 +144,12 @@ private struct FocusPane: View {
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
+        .task {
+            // Live-poll so the status flips to "Granted" without reopening.
+            while !Task.isCancelled {
+                granted = AccessibilityBridge.isTrusted
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+            }
+        }
     }
 }
