@@ -21,6 +21,11 @@ struct MacTmuxKitApp: App {
                 .environment(appState)
         }
         .windowResizability(.contentMinSize)
+
+        Settings {
+            SettingsView()
+                .environment(appState)
+        }
     }
 }
 

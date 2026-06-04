@@ -52,6 +52,11 @@ struct MenuBarPopoverView: View {
             if app.isLoading {
                 ProgressView().controlSize(.small)
             }
+            SettingsLink {
+                Image(systemName: "gearshape")
+            }
+            .buttonStyle(.borderless)
+            .help("Settings")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
@@ -91,11 +96,18 @@ struct MenuBarPopoverView: View {
                 Label("Dashboard", systemImage: "rectangle.3.group")
             }
             Button {
+                app.showCommandPalette()
+            } label: {
+                Label("Search", systemImage: "magnifyingglass")
+            }
+            .help("Command palette (⌥⌘T)")
+            Spacer()
+            Button {
                 Task { await app.refresh() }
             } label: {
-                Label("Refresh", systemImage: "arrow.clockwise")
+                Image(systemName: "arrow.clockwise")
             }
-            Spacer()
+            .help("Refresh")
             Button("Quit") {
                 NSApplication.shared.terminate(nil)
             }

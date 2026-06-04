@@ -84,24 +84,47 @@ struct SessionSidebar: View {
     }
 }
 
-/// One session row: status dot + name + window count.
+/// One session row: status dot + name + current folder. On hover, a quick
+/// "switch and focus" button replaces the window count (BucketDrop pattern).
 private struct SessionSidebarRow: View {
+    @Environment(AppState.self) private var app
     let session: TmuxSession
+    @State private var hovering = false
 
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: session.attached ? "circle.fill" : "circle")
                 .font(.system(size: 8))
                 .foregroundStyle(session.attached ? Color.green : Color.secondary)
-            Text(session.name)
-                .font(.system(size: 13))
-                .lineLimit(1)
-                .truncationMode(.middle)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(session.name)
+                    .font(.system(size: 13, weight: .medium))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Text(folder(session.path))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
             Spacer(minLength: 6)
-            Text("\(session.windowCount)w")
-                .font(.system(size: 11).monospacedDigit())
-                .foregroundStyle(.secondary)
+            if hovering {
+                Button { Task { await app.switchTo(session) } } label: {
+                    Image(systemName: "arrow.up.forward.app")
+                }
+                .buttonStyle(.borderless)
+                .help("Switch and focus")
+            } else {
+                Text("\(session.windowCount)w")
+                    .font(.system(size: 11).monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 3)
+        .onHover { hovering = $0 }
+    }
+
+    private func folder(_ path: String) -> String {
+        path.isEmpty ? "~" : URL(fileURLWithPath: path).lastPathComponent
     }
 }

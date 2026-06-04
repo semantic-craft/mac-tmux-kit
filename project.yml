@@ -12,6 +12,10 @@ packages:
   # Local pure-logic core (domain models, format strings, parser). No network.
   TmuxKitCore:
     path: Core
+  # Global hotkeys (recorder UI + UserDefaults persistence).
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: "2.0.0"
 
 settings:
   base:
@@ -36,6 +40,8 @@ targets:
     dependencies:
       - package: TmuxKitCore
         product: TmuxKitCore
+      - package: KeyboardShortcuts
+        product: KeyboardShortcuts
     info:
       path: Support/Info.plist
       properties:
