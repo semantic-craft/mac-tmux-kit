@@ -16,10 +16,11 @@ func hex(_ v: Int, _ a: CGFloat = 1) -> NSColor {
     color((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF, a)
 }
 
-let bgTop = hex(0x232C3C)       // lighter slate (top)
-let bgBottom = hex(0x0B0F15)    // deep ink (bottom), not pure black
-let violet = hex(0x8F86F7)      // active pane accent — pairs with Ghostty
-let violetBright = hex(0xA89DFF) // cursor block
+let bgTop = hex(0x2E2A50)       // dark indigo-violet (top) — gives the whole icon a purple cast
+let bgBottom = hex(0x100B1E)    // deep violet-black (bottom), not pure black
+let violet = hex(0x8F86F7)      // active pane (solid) — pairs with Ghostty
+let violetDeep = hex(0x6F63E6)  // active pane shade (gradient bottom)
+let cursorInk = hex(0xF1EFFF)   // cursor block, light for contrast on the violet pane
 
 func render(_ px: Int) -> Data {
     let s = CGFloat(px)
@@ -57,26 +58,25 @@ func render(_ px: Int) -> Data {
     glass(560, 536, 232, 188, fill: 0.09, stroke: 0.10)  // upper
     glass(560, 300, 232, 188, fill: 0.05, stroke: 0.08)  // lower
 
-    // Left column: the active pane, with a soft violet glow.
+    // Left column: the active pane — a SOLID violet block with a soft glow,
+    // so the icon reads clearly purple (not a faint outline on gray).
     let active = rrect(232, 300, 280, 424, 30)
     NSGraphicsContext.saveGraphicsState()
     let glow = NSShadow()
-    glow.shadowColor = violet.withAlphaComponent(0.55)
-    glow.shadowBlurRadius = 30 * u
+    glow.shadowColor = violet.withAlphaComponent(0.60)
+    glow.shadowBlurRadius = 34 * u
     glow.shadowOffset = .zero
     glow.set()
-    active.lineWidth = 7 * u
-    violet.setStroke()
-    active.stroke()
+    violet.setFill()
+    active.fill()                                  // solid fill casts the glow halo
     NSGraphicsContext.restoreGraphicsState()
-    violet.withAlphaComponent(0.20).setFill()
-    active.fill()
-    active.lineWidth = 7 * u
-    violet.setStroke()
+    NSGradient(colors: [violetDeep, violet])?.draw(in: active, angle: 90)  // gradient body
+    active.lineWidth = 2.5 * u                      // subtle top highlight edge
+    color(255, 255, 255, 0.18).setStroke()
     active.stroke()
 
-    // Cursor block, top-left of the active pane.
-    violetBright.setFill()
+    // Cursor block, top-left of the active pane (light, to read on the violet).
+    cursorInk.setFill()
     rrect(278, 604, 46, 76, 10).fill()
 
     return rep.representation(using: .png, properties: [:])!
