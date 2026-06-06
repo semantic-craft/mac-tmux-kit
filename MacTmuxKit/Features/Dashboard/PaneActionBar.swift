@@ -11,6 +11,7 @@ struct PaneActionBar: View {
     let pane: TmuxPane?
     @Binding var prompt: TextPrompt?
     @Binding var confirm: ConfirmAction?
+    @State private var showSwap = false
 
     // Two equal columns (not .adaptive — that doesn't guarantee equal widths,
     // and a content-sized cell lets the Swap Menu shrink below the others).
@@ -24,7 +25,15 @@ struct PaneActionBar: View {
             button("Split Down", "rectangle.bottomhalf.inset.filled") {
                 if let p = pane { await app.split(p, horizontal: false) }
             }
-            swapMenu
+            // Plain Button (not a Menu — Menu won't stretch to fill the cell);
+            // the four directions open in a confirmationDialog on click.
+            Button { showSwap = true } label: {
+                Label("Swap", systemImage: "arrow.left.arrow.right")
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.regular)
             button("Break Out", "rectangle.badge.plus") {
                 if let p = pane { await app.breakPane(p) }
             }
@@ -42,6 +51,12 @@ struct PaneActionBar: View {
         .background(.bar)
         .disabled(pane == nil)
         .opacity(pane == nil ? 0.55 : 1)
+        .confirmationDialog("Swap pane with neighbor", isPresented: $showSwap, titleVisibility: .visible) {
+            Button("Swap Left") { swap(.left) }
+            Button("Swap Right") { swap(.right) }
+            Button("Swap Up") { swap(.up) }
+            Button("Swap Down") { swap(.down) }
+        }
     }
 
     // MARK: - Buttons
@@ -62,23 +77,6 @@ struct PaneActionBar: View {
         .buttonStyle(.bordered)
         .controlSize(.regular)
         .tint(tint)
-    }
-
-    private var swapMenu: some View {
-        Menu {
-            Button("Swap Left") { swap(.left) }
-            Button("Swap Right") { swap(.right) }
-            Button("Swap Up") { swap(.up) }
-            Button("Swap Down") { swap(.down) }
-        } label: {
-            Label("Swap", systemImage: "arrow.left.arrow.right")
-                .lineLimit(1)
-                .frame(maxWidth: .infinity)
-        }
-        .menuStyle(.button)
-        .buttonStyle(.bordered)
-        .controlSize(.regular)
-        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Actions
