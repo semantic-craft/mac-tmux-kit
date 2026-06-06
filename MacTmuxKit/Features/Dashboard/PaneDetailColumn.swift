@@ -56,7 +56,7 @@ struct PaneDetailColumn: View {
 
     private var terminal: some View {
         ScrollView([.vertical, .horizontal]) {
-            Text(content.isEmpty ? (loading ? "Loading…" : "(empty)") : content)
+            Text(content.isEmpty ? (loading ? "" : "(empty)") : content)
                 .font(Theme.Font.terminal)
                 .foregroundStyle(content.isEmpty ? Theme.terminalText.opacity(0.5) : Theme.terminalText)
                 .textSelection(.enabled)
@@ -64,6 +64,12 @@ struct PaneDetailColumn: View {
                 .padding(12)
         }
         .background(Theme.terminalBackground)
+        .overlay {
+            // Quiet first-load indicator; reloads keep the old content visible.
+            if loading && content.isEmpty {
+                ProgressView().controlSize(.small)
+            }
+        }
     }
 
     private func load(_ pane: TmuxPane) async {
