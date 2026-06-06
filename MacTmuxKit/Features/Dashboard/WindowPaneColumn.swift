@@ -114,6 +114,7 @@ private struct WindowHeaderRow: View {
     let window: TmuxWindow
     @State private var editing = false
     @State private var draft = ""
+    @State private var hovering = false
 
     var body: some View {
         HStack(spacing: 6) {
@@ -140,12 +141,13 @@ private struct WindowHeaderRow: View {
             }
             Spacer()
             if !editing {
-                RenamePencil(action: startEditing)
+                if hovering { RenamePencil(action: startEditing) }
                 Text("\(window.paneCount)p")
                     .font(Theme.Font.metricSmall)
                     .foregroundStyle(.secondary)
             }
         }
+        .onHover { hovering = $0 }
     }
 
     private func startEditing() {
@@ -166,6 +168,7 @@ private struct PaneRow: View {
     let pane: TmuxPane
     @State private var editing = false
     @State private var draft = ""
+    @State private var hovering = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -192,13 +195,14 @@ private struct PaneRow: View {
             }
             Spacer(minLength: 6)
             if !editing {
-                RenamePencil(action: startEditing)
+                if hovering { RenamePencil(action: startEditing) }
                 Text("\(pane.width)x\(pane.height)")
                     .font(Theme.Font.metricSmall)
                     .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 2)
+        .onHover { hovering = $0 }
     }
 
     private func startEditing() {
