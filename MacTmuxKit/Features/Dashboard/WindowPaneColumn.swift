@@ -40,7 +40,7 @@ struct WindowPaneColumn: View {
                     PaneActionBar(pane: app.pane(id: selectedPaneId), prompt: $prompt, confirm: $confirm)
                 }
                 .navigationTitle(session.name)
-                .navigationSubtitle("\(session.windowCount) windows")
+                .navigationSubtitle(session.windowCount == 1 ? "1 window" : "\(session.windowCount) windows")
             } else {
                 EmptyStateView(icon: "sidebar.squares.leading", title: "Select a session")
             }
@@ -143,7 +143,7 @@ private struct WindowHeaderRow: View {
                 RenamePencil(action: startEditing)
                 Text("\(window.paneCount)p")
                     .font(Theme.Font.metricSmall)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -195,7 +195,7 @@ private struct PaneRow: View {
                 RenamePencil(action: startEditing)
                 Text("\(pane.width)x\(pane.height)")
                     .font(Theme.Font.metricSmall)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 2)
