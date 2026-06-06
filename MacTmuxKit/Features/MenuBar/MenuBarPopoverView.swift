@@ -64,7 +64,7 @@ struct MenuBarPopoverView: View {
                 LazyVStack(spacing: 3) {
                     ForEach(app.sessions) { session in
                         SessionRow(session: session) {
-                            Task { await app.switchTo(session) }
+                            Task { await app.activateFromMenuBar(session) }
                         }
                     }
                 }

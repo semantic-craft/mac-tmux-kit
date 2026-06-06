@@ -29,13 +29,9 @@ struct DashboardView: View {
         .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: app.toast)
         .task {
             await app.refresh()
-            // Open onto the most-recent session and its active pane, so the
-            // window is never an empty "Select a session / pane" shell.
-            if selectedSessionId == nil, let first = app.sessions.first {
-                selectedSessionId = first.id
-                selectedPaneId = defaultPaneId(for: first.id)
-            }
+            applySelection()
         }
+        .onChange(of: app.dashboardRequest) { _, _ in applySelection() }
         .onChange(of: selectedSessionId) { _, id in
             // Selecting a session reveals its active pane immediately.
             selectedPaneId = defaultPaneId(for: id)
@@ -52,6 +48,18 @@ struct DashboardView: View {
                 SettingsLink { Image(systemName: "gearshape") }
                     .help("Settings (⌘,)")
             }
+        }
+    }
+
+    /// Apply a pending "open in Dashboard" request if present, otherwise open
+    /// onto the most-recent session — so the window is never an empty shell.
+    private func applySelection() {
+        if let req = app.dashboardRequest {
+            selectedSessionId = req.sessionId
+            selectedPaneId = defaultPaneId(for: req.sessionId)
+        } else if selectedSessionId == nil, let first = app.sessions.first {
+            selectedSessionId = first.id
+            selectedPaneId = defaultPaneId(for: first.id)
         }
     }
 
