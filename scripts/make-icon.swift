@@ -6,7 +6,7 @@ import AppKit
 // a dark slate squircle holding the classic tmux pane split — one full-height
 // pane on the left, two stacked on the right, separated by dark "border" gaps.
 // The left pane is the active one: a green-tinted fill, a green outline, and a
-// small terminal cursor block (system green, matching the app's UI).
+// small terminal cursor block (the app's Flexoki accent, matching Theme.accent).
 
 func color(_ r: Int, _ g: Int, _ b: Int, _ a: CGFloat = 1) -> NSColor {
     NSColor(srgbRed: CGFloat(r) / 255, green: CGFloat(g) / 255, blue: CGFloat(b) / 255, alpha: a)
@@ -14,8 +14,8 @@ func color(_ r: Int, _ g: Int, _ b: Int, _ a: CGFloat = 1) -> NSColor {
 
 let bgTop = color(0x21, 0x29, 0x38)      // lighter slate (top)
 let bgBottom = color(0x0C, 0x10, 0x16)   // deep ink (bottom), not pure black
-let accent = color(0x30, 0xD1, 0x58)            // system green = active pane
-let accentTint = color(0x30, 0xD1, 0x58, 0.16)  // active pane fill wash
+let accent = color(0x66, 0x80, 0x0B)            // Flexoki green = the app's accent (Theme.accent fallback)
+let accentTint = color(0x66, 0x80, 0x0B, 0.16)  // active pane fill wash
 let surface = color(0x46, 0x53, 0x67)           // neutral pane
 let surfaceDim = color(0x37, 0x42, 0x53)         // quieter pane
 
