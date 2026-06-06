@@ -16,11 +16,12 @@ func hex(_ v: Int, _ a: CGFloat = 1) -> NSColor {
     color((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF, a)
 }
 
-let bgTop = hex(0x2E2A50)       // dark indigo-violet (top) — gives the whole icon a purple cast
-let bgBottom = hex(0x100B1E)    // deep violet-black (bottom), not pure black
-let violet = hex(0x8F86F7)      // active pane (solid) — pairs with Ghostty
-let violetDeep = hex(0x6F63E6)  // active pane shade (gradient bottom)
-let cursorInk = hex(0xF1EFFF)   // cursor block, light for contrast on the violet pane
+// Soft / airy light-lavender palette (chosen from browser-rendered variants).
+let bgTop = hex(0x4A4377)       // lighter indigo-violet (top)
+let bgBottom = hex(0x2A2450)    // medium violet (bottom)
+let violet = hex(0xCFC9FF)      // active pane — light lavender (gradient top)
+let violetDeep = hex(0xB3ABFF)  // active pane (gradient bottom)
+let cursorInk = hex(0x3A3468)   // cursor block, dark for contrast on the light pane
 
 func render(_ px: Int) -> Data {
     let s = CGFloat(px)
