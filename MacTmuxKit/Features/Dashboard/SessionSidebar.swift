@@ -119,8 +119,8 @@ private struct SessionSidebarRow: View {
             }
             Spacer(minLength: 6)
             if !editing {
-                RenamePencil(action: startEditing)
                 if hovering {
+                    RenamePencil(action: startEditing)
                     Button { Task { await app.switchTo(session) } } label: {
                         Image(systemName: "arrow.up.forward.app")
                     }
