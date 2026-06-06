@@ -61,6 +61,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 private struct GeneralPane: View {
     @AppStorage("tmuxBinaryPath") private var tmuxOverride = ""
     @AppStorage("showMenuBarIcon") private var showMenuBarIcon = true
+    @AppStorage("sessionClickAction") private var sessionClickAction = SessionClickAction.switchAndFocus
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     private var detectedPath: String {
@@ -74,6 +75,16 @@ private struct GeneralPane: View {
                 LabeledContent("Detected", value: detectedPath)
                 TextField("Override path", text: $tmuxOverride, prompt: Text("Auto-detect"))
                 Text("Leave blank to auto-detect. Changes apply on next launch.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Sessions") {
+                Picker("Clicking a session", selection: $sessionClickAction) {
+                    ForEach(SessionClickAction.allCases, id: \.self) { action in
+                        Text(action.title).tag(action)
+                    }
+                }
+                Text("What happens when you click a session in the menu bar.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

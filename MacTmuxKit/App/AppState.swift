@@ -4,6 +4,27 @@ import Observation
 import KeyboardShortcuts
 import TmuxKitCore
 
+/// What clicking a session row in the menu bar does (Settings → General).
+enum SessionClickAction: String, CaseIterable {
+    case switchAndFocus
+    case openDashboard
+
+    var title: String {
+        switch self {
+        case .switchAndFocus: "Switch and focus"
+        case .openDashboard: "Open in Dashboard"
+        }
+    }
+}
+
+/// A request to open the Dashboard focused on a specific session. The `token`
+/// makes each request unique, so clicking the same session again still triggers
+/// the Dashboard's selection update.
+struct DashboardRequest: Equatable {
+    let sessionId: String
+    let token = UUID()
+}
+
 /// Top-level observable state shared by every UI surface (menu bar, palette,
 /// Dashboard). Owns the `TmuxService`, the session/window/pane data, and the
 /// mutating action methods (a single implementation reused by buttons, context
@@ -22,6 +43,8 @@ final class AppState {
     /// Transient confirmation for the last action (optimistic-UI feedback).
     private(set) var toast: ToastInfo?
     private var toastToken = UUID()
+    /// Set when the user opens a session in the Dashboard from the menu bar.
+    private(set) var dashboardRequest: DashboardRequest?
 
     let service: TmuxService?
     let focusService = GhosttyFocusService()
@@ -63,6 +86,24 @@ final class AppState {
 
     func showCommandPalette() { commandPalette?.show() }
     func showDashboard() { dashboard?.show() }
+
+    /// Open the Dashboard focused on a specific session (menu-bar "Open in
+    /// Dashboard" click action).
+    func showDashboard(selecting sessionId: String) {
+        dashboardRequest = DashboardRequest(sessionId: sessionId)
+        dashboard?.show()
+    }
+
+    /// Menu-bar session-row click behavior, controlled by the `sessionClickAction`
+    /// setting: switch + focus the session (default), or reveal it in the Dashboard.
+    func activateFromMenuBar(_ s: TmuxSession) async {
+        let stored = UserDefaults.standard.string(forKey: "sessionClickAction") ?? ""
+        if SessionClickAction(rawValue: stored) == .openDashboard {
+            showDashboard(selecting: s.id)
+        } else {
+            await switchTo(s)
+        }
+    }
 
     /// Switch + focus the most recently active session that isn't already attached
     /// (falls back to the most recent overall).
