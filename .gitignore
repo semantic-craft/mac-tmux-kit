@@ -13,3 +13,6 @@ xcuserdata/
 # Secrets / local config
 *.env
 .env
+
+# Local-only Claude Code overrides (plugin scoping)
+.claude/settings.local.json
