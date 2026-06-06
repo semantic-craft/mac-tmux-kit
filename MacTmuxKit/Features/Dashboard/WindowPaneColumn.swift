@@ -201,7 +201,7 @@ private struct PaneRow: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 3)
         .onHover { hovering = $0 }
     }
 
