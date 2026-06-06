@@ -34,10 +34,15 @@ struct PaneActionBar: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.regular)
-            // Primary destructive: red fill.
-            button("Kill Pane", "xmark.square", tint: Theme.danger) {
-                if let p = pane { askKillPane(p) }
+            // Primary destructive: solid red (prominent), so it clearly outranks
+            // the lighter red-text "Kill Others".
+            Button { if let p = pane { askKillPane(p) } } label: {
+                Label("Kill Pane", systemImage: "xmark.square")
+                    .lineLimit(1).frame(maxWidth: .infinity)
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.regular)
+            .tint(Theme.danger)
         }
         .padding(12)
         .background(.bar)
