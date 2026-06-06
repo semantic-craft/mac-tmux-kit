@@ -2,25 +2,33 @@
 import AppKit
 
 // Tmux Kit app icon generator.
-// Design (taste-skill: single accent, no AI-purple, no pure black, bold at 16px):
-// a dark slate squircle holding the classic tmux pane split — one full-height
-// pane on the left, two stacked on the right, separated by dark "border" gaps.
-// The left pane is the active one: a green-tinted fill, a green outline, and a
-// small terminal cursor block (the app's Flexoki accent, matching Theme.accent).
+// Concept (chosen from browser-rendered candidates): the tmux PANE SPLIT — one
+// tall active pane on the left (violet, glowing, with a cursor block) and two
+// stacked "glass" panes on the right. This says "multiplexer / session manager"
+// and is deliberately NOT a ghost or a prompt, so it reads distinctly from
+// Ghostty in the Dock. Violet pairs with Ghostty's palette without imitating it.
+// Design space is 1024px; geometry scales by `u = s/1024`. Coordinates are y-up.
 
 func color(_ r: Int, _ g: Int, _ b: Int, _ a: CGFloat = 1) -> NSColor {
     NSColor(srgbRed: CGFloat(r) / 255, green: CGFloat(g) / 255, blue: CGFloat(b) / 255, alpha: a)
 }
+func hex(_ v: Int, _ a: CGFloat = 1) -> NSColor {
+    color((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF, a)
+}
 
-let bgTop = color(0x21, 0x29, 0x38)      // lighter slate (top)
-let bgBottom = color(0x0C, 0x10, 0x16)   // deep ink (bottom), not pure black
-let accent = color(0x66, 0x80, 0x0B)            // Flexoki green = the app's accent (Theme.accent fallback)
-let accentTint = color(0x66, 0x80, 0x0B, 0.16)  // active pane fill wash
-let surface = color(0x46, 0x53, 0x67)           // neutral pane
-let surfaceDim = color(0x37, 0x42, 0x53)         // quieter pane
+let bgTop = hex(0x232C3C)       // lighter slate (top)
+let bgBottom = hex(0x0B0F15)    // deep ink (bottom), not pure black
+let violet = hex(0x8F86F7)      // active pane accent — pairs with Ghostty
+let violetBright = hex(0xA89DFF) // cursor block
 
 func render(_ px: Int) -> Data {
     let s = CGFloat(px)
+    let u = s / 1024
+    func rrect(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ r: CGFloat) -> NSBezierPath {
+        NSBezierPath(roundedRect: CGRect(x: x * u, y: y * u, width: w * u, height: h * u),
+                     xRadius: r * u, yRadius: r * u)
+    }
+
     let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil, pixelsWide: px, pixelsHigh: px,
         bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
@@ -35,50 +43,41 @@ func render(_ px: Int) -> Data {
     let rect = CGRect(x: inset, y: inset, width: s - 2 * inset, height: s - 2 * inset)
     let radius = rect.width * 0.2245
     let bg = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
-
     NSGradient(colors: [bgBottom, bgTop])?.draw(in: bg, angle: 90)
-
-    // Subtle top edge highlight for depth.
     bg.lineWidth = max(1, s * 0.004)
     color(255, 255, 255, 0.06).setStroke()
     bg.stroke()
 
-    // Pane split: one full-height pane on the left (active), two stacked on the
-    // right, separated by dark gaps that read as tmux pane borders.
-    let content = rect.insetBy(dx: rect.width * 0.205, dy: rect.width * 0.205)
-    let gap = content.width * 0.055
-    let prad = content.width * 0.05
-    let leftW = content.width * 0.50 - gap / 2
+    // Right column: two stacked "glass" panes (y-up: upper first).
+    func glass(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, fill: CGFloat, stroke: CGFloat) {
+        let p = rrect(x, y, w, h, 26)
+        color(255, 255, 255, fill).setFill(); p.fill()
+        p.lineWidth = 2.4 * u; color(255, 255, 255, stroke).setStroke(); p.stroke()
+    }
+    glass(560, 536, 232, 188, fill: 0.09, stroke: 0.10)  // upper
+    glass(560, 300, 232, 188, fill: 0.05, stroke: 0.08)  // lower
 
-    let left = CGRect(x: content.minX, y: content.minY, width: leftW, height: content.height)
-    let rx = left.maxX + gap
-    let rw = content.maxX - rx
-    let topH = content.height * 0.56 - gap / 2
-    let rTop = CGRect(x: rx, y: content.maxY - topH, width: rw, height: topH)
-    let rBot = CGRect(x: rx, y: content.minY, width: rw, height: content.height - topH - gap)
+    // Left column: the active pane, with a soft violet glow.
+    let active = rrect(232, 300, 280, 424, 30)
+    NSGraphicsContext.saveGraphicsState()
+    let glow = NSShadow()
+    glow.shadowColor = violet.withAlphaComponent(0.55)
+    glow.shadowBlurRadius = 30 * u
+    glow.shadowOffset = .zero
+    glow.set()
+    active.lineWidth = 7 * u
+    violet.setStroke()
+    active.stroke()
+    NSGraphicsContext.restoreGraphicsState()
+    violet.withAlphaComponent(0.20).setFill()
+    active.fill()
+    active.lineWidth = 7 * u
+    violet.setStroke()
+    active.stroke()
 
-    surface.setFill()
-    NSBezierPath(roundedRect: rTop, xRadius: prad, yRadius: prad).fill()
-    surfaceDim.setFill()
-    NSBezierPath(roundedRect: rBot, xRadius: prad, yRadius: prad).fill()
-
-    // Active (left) pane: green-tinted fill + green outline + cursor block.
-    accentTint.setFill()
-    NSBezierPath(roundedRect: left, xRadius: prad, yRadius: prad).fill()
-    let outline = NSBezierPath(roundedRect: left, xRadius: prad, yRadius: prad)
-    outline.lineWidth = content.width * 0.020
-    accent.setStroke()
-    outline.stroke()
-
-    let curW = content.width * 0.085
-    let curH = content.width * 0.155
-    let cursor = CGRect(
-        x: left.minX + content.width * 0.085,
-        y: left.maxY - curH - content.width * 0.085,
-        width: curW, height: curH
-    )
-    accent.setFill()
-    NSBezierPath(roundedRect: cursor, xRadius: curW * 0.18, yRadius: curW * 0.18).fill()
+    // Cursor block, top-left of the active pane.
+    violetBright.setFill()
+    rrect(278, 604, 46, 76, 10).fill()
 
     return rep.representation(using: .png, properties: [:])!
 }
