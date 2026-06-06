@@ -18,7 +18,7 @@ struct MacTmuxKitApp: App {
     private var appState: AppState { delegate.appState }
 
     var body: some Scene {
-        MenuBarExtra("Tmux Kit", systemImage: "terminal", isInserted: $showMenuBarIcon) {
+        MenuBarExtra("Tmux Kit", image: "MenuBarIcon", isInserted: $showMenuBarIcon) {
             MenuBarPopoverView()
                 .environment(appState)
         }
