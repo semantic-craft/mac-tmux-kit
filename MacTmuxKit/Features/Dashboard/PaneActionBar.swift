@@ -12,7 +12,9 @@ struct PaneActionBar: View {
     @Binding var prompt: TextPrompt?
     @Binding var confirm: ConfirmAction?
 
-    private let columns = [GridItem(.adaptive(minimum: 112), spacing: 8)]
+    // Two equal columns (not .adaptive — that doesn't guarantee equal widths,
+    // and a content-sized cell lets the Swap Menu shrink below the others).
+    private let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
 
     var body: some View {
         LazyVGrid(columns: columns, spacing: 8) {
@@ -26,23 +28,15 @@ struct PaneActionBar: View {
             button("Break Out", "rectangle.badge.plus") {
                 if let p = pane { await app.breakPane(p) }
             }
-            // Secondary destructive: red text, plain border.
-            Button { if let p = pane { askKillOthers(p) } } label: {
-                Label("Kill Others", systemImage: "rectangle.on.rectangle.slash")
-                    .lineLimit(1).frame(maxWidth: .infinity)
-                    .foregroundStyle(Theme.danger)
+            // Destructive: both kills lightly red-tinted (a solid red FILL needs
+            // .borderedProminent, which sizes differently — so we tint instead,
+            // keeping all six buttons one uniform .bordered size).
+            button("Kill Others", "rectangle.on.rectangle.slash", tint: Theme.danger) {
+                if let p = pane { askKillOthers(p) }
             }
-            .buttonStyle(.bordered)
-            .controlSize(.regular)
-            // Primary destructive: solid red (prominent), so it clearly outranks
-            // the lighter red-text "Kill Others".
-            Button { if let p = pane { askKillPane(p) } } label: {
-                Label("Kill Pane", systemImage: "xmark.square")
-                    .lineLimit(1).frame(maxWidth: .infinity)
+            button("Kill Pane", "xmark.square", tint: Theme.danger) {
+                if let p = pane { askKillPane(p) }
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.regular)
-            .tint(Theme.danger)
         }
         .padding(12)
         .background(.bar)
@@ -84,6 +78,7 @@ struct PaneActionBar: View {
         .menuStyle(.button)
         .buttonStyle(.bordered)
         .controlSize(.regular)
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Actions
