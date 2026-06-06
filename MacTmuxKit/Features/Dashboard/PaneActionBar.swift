@@ -1,46 +1,42 @@
 import SwiftUI
 import TmuxKitCore
 
-/// Always-visible action bar for the selected pane: labeled, comfortably sized
-/// buttons for the common operations (no menu paging). Low-frequency actions
-/// (Mark, Clear History) live in the pane's right-click menu. Disabled when no
-/// pane is selected.
+/// Always-visible action bar for the selected pane: labeled buttons for the
+/// common operations (no menu paging). Low-frequency actions (Mark, Clear
+/// History) live in the pane's right-click menu. Disabled when no pane is
+/// selected. Destructive hierarchy: "Kill Pane" is the primary red action;
+/// "Kill Others" is rarer, shown lighter (red text, not a red fill).
 struct PaneActionBar: View {
     @Environment(AppState.self) private var app
     let pane: TmuxPane?
     @Binding var prompt: TextPrompt?
     @Binding var confirm: ConfirmAction?
 
-    private let columns = [GridItem(.adaptive(minimum: 116), spacing: 8)]
+    private let columns = [GridItem(.adaptive(minimum: 112), spacing: 8)]
 
     var body: some View {
-        VStack(spacing: 0) {
-            if let pane {
-                Text("Pane \(pane.id) · \(pane.command)")
-                    .font(Theme.Font.metric)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.bottom, 8)
+        LazyVGrid(columns: columns, spacing: 8) {
+            button("Split Right", "rectangle.righthalf.inset.filled") {
+                if let p = pane { await app.split(p, horizontal: true) }
             }
-            LazyVGrid(columns: columns, spacing: 8) {
-                button("Split Right", "rectangle.righthalf.inset.filled") {
-                    if let p = pane { await app.split(p, horizontal: true) }
-                }
-                button("Split Down", "rectangle.bottomhalf.inset.filled") {
-                    if let p = pane { await app.split(p, horizontal: false) }
-                }
-                swapMenu
-                button("Break Out", "rectangle.badge.plus") {
-                    if let p = pane { await app.breakPane(p) }
-                }
-                button("Kill Others", "rectangle.on.rectangle.slash", destructive: true) {
-                    if let p = pane { askKillOthers(p) }
-                }
-                button("Kill Pane", "xmark.square", destructive: true) {
-                    if let p = pane { askKillPane(p) }
-                }
+            button("Split Down", "rectangle.bottomhalf.inset.filled") {
+                if let p = pane { await app.split(p, horizontal: false) }
+            }
+            swapMenu
+            button("Break Out", "rectangle.badge.plus") {
+                if let p = pane { await app.breakPane(p) }
+            }
+            // Secondary destructive: red text, plain border.
+            Button { if let p = pane { askKillOthers(p) } } label: {
+                Label("Kill Others", systemImage: "rectangle.on.rectangle.slash")
+                    .lineLimit(1).frame(maxWidth: .infinity)
+                    .foregroundStyle(Theme.danger)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.regular)
+            // Primary destructive: red fill.
+            button("Kill Pane", "xmark.square", tint: Theme.danger) {
+                if let p = pane { askKillPane(p) }
             }
         }
         .padding(12)
@@ -54,7 +50,7 @@ struct PaneActionBar: View {
     private func button(
         _ title: String,
         _ symbol: String,
-        destructive: Bool = false,
+        tint: Color? = nil,
         _ action: @escaping () async -> Void
     ) -> some View {
         Button {
@@ -65,8 +61,8 @@ struct PaneActionBar: View {
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
-        .controlSize(.large)
-        .tint(destructive ? Theme.danger : nil)
+        .controlSize(.regular)
+        .tint(tint)
     }
 
     private var swapMenu: some View {
@@ -82,7 +78,7 @@ struct PaneActionBar: View {
         }
         .menuStyle(.button)
         .buttonStyle(.bordered)
-        .controlSize(.large)
+        .controlSize(.regular)
     }
 
     // MARK: - Actions
