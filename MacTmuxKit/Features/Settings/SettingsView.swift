@@ -62,6 +62,7 @@ private struct GeneralPane: View {
     @AppStorage("tmuxBinaryPath") private var tmuxOverride = ""
     @AppStorage("showMenuBarIcon") private var showMenuBarIcon = true
     @AppStorage("sessionClickAction") private var sessionClickAction = SessionClickAction.switchAndFocus
+    @AppStorage("showDockIcon") private var showDockIcon = false
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     private var detectedPath: String {
@@ -90,6 +91,8 @@ private struct GeneralPane: View {
             }
             Section("Menu bar") {
                 Toggle("Show menu bar icon", isOn: $showMenuBarIcon)
+                Toggle("Show Dock icon", isOn: $showDockIcon)
+                    .onChange(of: showDockIcon) { _, _ in AppActivationPolicy.applyDockPreference() }
                 Text("When hidden, summon the app with your global shortcuts: Dashboard (⌘⌃⌥⇧D) and Command palette (⌥⌘T). Set them under Keybindings.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
