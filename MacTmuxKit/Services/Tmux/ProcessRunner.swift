@@ -27,6 +27,12 @@ enum ProcessRunner {
         let process = Process()
         process.executableURL = executable
         process.arguments = arguments
+        // A login/Finder-launched GUI app inherits a minimal PATH; ensure common
+        // CLI locations (incl. Homebrew) are present for tmux and any helpers it runs.
+        var environment = ProcessInfo.processInfo.environment
+        let toolPaths = "/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        environment["PATH"] = environment["PATH"].map { "\(toolPaths):\($0)" } ?? toolPaths
+        process.environment = environment
 
         let outPipe = Pipe()
         let errPipe = Pipe()
