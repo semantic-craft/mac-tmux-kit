@@ -9,9 +9,29 @@ import TmuxKitCore
 /// rename/split/swap/break …) are added with the action registry in later phases.
 final class TmuxService: Sendable {
     let binary: URL
+    /// The tmux server socket to talk to, resolved explicitly so the app never
+    /// depends on the process environment to auto-detect it. When the app is
+    /// launched at login/Finder, macOS hands it a stripped environment (no `TMUX`,
+    /// minimal PATH) and tmux's socket auto-detection could fail — making the
+    /// Dashboard show "No tmux sessions" while the CLI sees them. Passing
+    /// `-S <socket>` on every call pins it to the real server's socket.
+    let socket: String
 
     init(binary: URL) {
         self.binary = binary
+        self.socket = Self.resolveSocket()
+    }
+
+    /// Honor `$TMUX` (socket is the part before the first comma) when we are
+    /// inside tmux; otherwise `$TMUX_TMPDIR` (or `/tmp`) + `tmux-<uid>/default`,
+    /// which is tmux's own default location.
+    static func resolveSocket() -> String {
+        let env = ProcessInfo.processInfo.environment
+        if let tmux = env["TMUX"], let sock = tmux.split(separator: ",").first, !sock.isEmpty {
+            return String(sock)
+        }
+        let dir = env["TMUX_TMPDIR"].flatMap { $0.isEmpty ? nil : $0 } ?? "/tmp"
+        return "\(dir)/tmux-\(getuid())/default"
     }
 
     // MARK: - Reads
@@ -80,7 +100,7 @@ final class TmuxService: Sendable {
     /// Run a tmux subcommand (internal so the per-domain extensions can use it).
     @discardableResult
     func run(_ args: [String]) async throws -> String {
-        let result = try await ProcessRunner.run(executable: binary, arguments: args)
+        let result = try await ProcessRunner.run(executable: binary, arguments: ["-S", socket] + args)
         guard result.exitCode == 0 else {
             throw TmuxError.classify(stderr: result.stderr, code: result.exitCode)
         }

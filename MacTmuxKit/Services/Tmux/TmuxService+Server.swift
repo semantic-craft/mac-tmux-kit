@@ -12,7 +12,7 @@ extension TmuxService {
             return ProcessResult(stdout: "", stderr: "Empty command", exitCode: -1)
         }
         do {
-            return try await ProcessRunner.run(executable: binary, arguments: args, timeout: 10)
+            return try await ProcessRunner.run(executable: binary, arguments: ["-S", socket] + args, timeout: 10)
         } catch {
             return ProcessResult(stdout: "", stderr: String(describing: error), exitCode: -1)
         }
