@@ -43,27 +43,27 @@ But tmux has one well-documented wall: **the keybindings.** `Ctrl-b "` to split,
 
 **Tmux loyalists who want a control panel, not a new religion.**
 
-You've seen what Warp and Zellij offer — parallel sessions, visual management, mouse-friendly workflows. But your servers speak tmux, your muscle memory is tmux, and you're not rewriting your stack for a prettier multiplexer.
+You already run parallel sessions — agents, builds, SSH work — and you want the visual management and discoverability that modern tools promise, without leaving the tmux stack your servers, config, and muscle memory are built on.
 
 Tmux Kit is for developers who run parallel agents in tmux, love what tmux gives them over SSH, and are tired of pretending `Ctrl-b %` is discoverable. **Keep tmux, lose the friction.**
 
 ## Why stay on tmux
 
-Others replace tmux. **We make the tmux you already run operable.**
+**We make the tmux you already run operable — and keep every reason you chose it.**
 
-Tmux Kit doesn't ask you to give up tmux's compatibility — SSH ubiquity, server-side persistence, terminal freedom, scriptability, and a decade of plugins. It only removes the discoverability tax on your Mac.
+Tmux Kit doesn't ask you to give up what already works. It adds a native macOS control surface on top of the compatibility you already have: SSH ubiquity, server-side persistence, terminal freedom, scriptability, and a mature plugin ecosystem.
 
-| Advantage | What it means | What you lose by switching away |
+| Strength | What it gives you | Why it matters day-to-day |
 |---|---|---|
-| **Ubiquity** | Pre-installed or one `apt install` away on virtually every server | Installing a new multiplexer on every remote host |
-| **SSH persistence** | Sessions live on the server; detach, reconnect, reattach | A dropped connection kills your agents; headless servers need a GUI terminal |
-| **Terminal-agnostic** | Works inside Ghostty, iTerm, Alacritty, or anything else | Locked to Warp, iTerm `-CC`, or another single app |
-| **Multi-client** | Two people — or two devices — can attach to the same session | Pairing and cross-device handoff get harder |
-| **Scriptable CLI** | `new-session`, `send-keys`, `capture-pane` — stable shell API | Tools like Tmux Kit couldn't drive it from the outside |
-| **Mature ecosystem** | [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect), vim-tmux-navigator, TPM, team conventions | Rewriting configs and plugins from scratch |
-| **Lightweight** | ~6 MB per session; fine on old boxes and slow links | Heavier runtimes that may not install everywhere |
+| **Ubiquity** | tmux is on virtually every server you SSH into | Same workflow locally and remotely — no per-host setup |
+| **SSH persistence** | Sessions live on the server; detach, reconnect, reattach | Agents and long builds survive dropped connections |
+| **Terminal-agnostic** | Works inside Ghostty, iTerm, Alacritty, or anything else | Pick your terminal; tmux stays the layer that matters |
+| **Multi-client** | Two people — or two devices — can attach to the same session | Pair programming and cross-device handoff, built in |
+| **Scriptable CLI** | `new-session`, `send-keys`, `capture-pane` — stable shell API | Tmux Kit itself drives tmux through this interface |
+| **Mature ecosystem** | [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect), vim-tmux-navigator, TPM, team conventions | Your existing plugins and configs keep working |
+| **Lightweight** | ~6 MB per session; fine on old boxes and slow links | Run many panes without paying a heavy runtime tax |
 
-You want the control surface of a modern tool. You don't want to trade tmux's reach for it.
+Modern multiplexers like [Zellij](https://zellij.dev) are doing genuinely good work reimagining the terminal workspace. Tmux Kit takes a different path: **make the tmux you already depend on feel as approachable on macOS** — not ask you to start over.
 
 ## Built for vibe coding
 
@@ -119,18 +119,18 @@ Destructive actions are consistently gated behind a confirm dialog.
 
 <!-- More on the way: the menu-bar switcher and the 3-column Dashboard. -->
 
-## Why not just…
+## What makes Tmux Kit different
 
-| | **Tmux Kit** | [iTerm2](https://iterm2.com/documentation-tmux-integration.html) `-CC` | [Termdock](https://termdock.com) | [Warp](https://www.warp.dev) | [Zellij](https://zellij.dev) |
-|---|---|---|---|---|---|
-| What it is | Menu-bar GUI **on top of** tmux | tmux windows as native iTerm tabs | GUI layer for tmux | Full terminal replacement | tmux **replacement** multiplexer |
-| Keeps your tmux | ✅ yes | ✅ yes | ✅ yes | — | ❌ replaces it |
-| Any terminal | ✅ yes | ❌ iTerm only | ✅ yes | ❌ Warp only | ✅ yes |
-| Footprint | Menu-bar resident, native | Bundled with iTerm | Standalone app | Heavier (Electron-class) | Light, but its own runtime |
-| Account / sign-in | None | None | Varies | Required | None |
-| Touches your config | **No plugins, no `~/.tmux.conf` changes** | Varies | Varies | n/a | New config format |
+Tmux Kit is a **control surface**, not a new stack. It talks to the tmux server you already run and adds a native macOS layer on top:
 
-Want AI baked into a terminal? Use Warp. Want a modern multiplexer and don't need tmux on every SSH host? Use Zellij. Deep in iTerm and happy there? Use `-CC`. Want to **stay on tmux, use any terminal, and get a native macOS control panel?** **Tmux Kit.**
+- **Overlay, not replacement** — your sessions, config, and plugins stay exactly where they are
+- **Zero config intrusion** — no plugins installed, no edits to `~/.tmux.conf`
+- **Any terminal** — not tied to one emulator; theme-matches [Ghostty](https://ghostty.org) when you use it
+- **Menu-bar native** — SwiftUI + AppKit, global hotkeys, lives out of the way until you need it
+- **Built for parallel agents** — live pane preview, kill-others, cross-session pane swap
+- **Private by default** — no network, no account, no telemetry
+
+Plenty of good tools take other paths — [iTerm2's `-CC` integration](https://iterm2.com/documentation-tmux-integration.html) for deep emulator binding, [Termdock](https://termdock.com) for another take on tmux GUI, [Warp](https://www.warp.dev) for an AI-native terminal, [Zellij](https://zellij.dev) for a modern multiplexer from the ground up. **Tmux Kit is for when you want to stay on tmux, keep your terminal, and add a lightweight native control panel on macOS.**
 
 ## Keyboard
 
