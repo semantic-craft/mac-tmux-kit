@@ -63,6 +63,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         appState.registerHotkeys()
+        appState.startAutoRefresh()
         AppActivationPolicy.applyDockPreference()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        appState.stopAutoRefresh()
     }
 }

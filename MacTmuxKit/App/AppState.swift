@@ -50,6 +50,7 @@ final class AppState {
     let focusService = GhosttyFocusService()
     private var commandPalette: CommandPaletteController?
     private var dashboard: DashboardWindowController?
+    private var autoRefreshTask: Task<Void, Never>?
 
     init() {
         let override = UserDefaults.standard.string(forKey: "tmuxBinaryPath")
@@ -82,6 +83,27 @@ final class AppState {
         KeyboardShortcuts.onKeyDown(for: .switchRecentSession) { [weak self] in
             Task { await self?.switchToMostRecent() }
         }
+    }
+
+    /// Keep the menu-bar state current even when Tmux Kit has been running for
+    /// days before a tmux server/session appears.
+    func startAutoRefresh() {
+        guard autoRefreshTask == nil else { return }
+        autoRefreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                await self?.refresh()
+                do {
+                    try await Task.sleep(nanoseconds: 5_000_000_000)
+                } catch {
+                    break
+                }
+            }
+        }
+    }
+
+    func stopAutoRefresh() {
+        autoRefreshTask?.cancel()
+        autoRefreshTask = nil
     }
 
     func showCommandPalette() { commandPalette?.show() }
@@ -125,6 +147,7 @@ final class AppState {
             statusMessage = TmuxError.binaryNotFound.userMessage
             return
         }
+        guard !isLoading else { return }
         isLoading = true
         defer { isLoading = false }
         do {
