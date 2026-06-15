@@ -139,6 +139,50 @@ final class AppState {
     func session(id: String?) -> TmuxSession? { sessions.first { $0.id == id } }
     func pane(id: String?) -> TmuxPane? { panes.first { $0.id == id } }
 
+    func activeWindow(in session: TmuxSession) -> TmuxWindow? {
+        let sessionWindows = tree.windows(in: session.id)
+        return sessionWindows.first { $0.active } ?? sessionWindows.first
+    }
+
+    func activePane(in window: TmuxWindow?) -> TmuxPane? {
+        guard let window else { return nil }
+        let windowPanes = tree.panes(in: window.id)
+        return windowPanes.first { $0.active } ?? windowPanes.first
+    }
+
+    func activePane(in session: TmuxSession) -> TmuxPane? {
+        activePane(in: activeWindow(in: session))
+    }
+
+    func paneCount(in session: TmuxSession) -> Int {
+        panes.filter { $0.sessionId == session.id }.count
+    }
+
+    func sessionDisplayPath(_ session: TmuxSession) -> String {
+        if let activePath = activePane(in: session)?.path, !activePath.isEmpty {
+            return activePath
+        }
+        return session.path
+    }
+
+    func windowReadableName(_ window: TmuxWindow, activePane: TmuxPane?) -> String {
+        let raw = window.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let activePane else { return raw.isEmpty ? "Window \(window.index)" : raw }
+        let paneTitle = paneReadableName(activePane)
+        if raw.isEmpty || raw == activePane.command || raw == activePane.title || raw == hostShort {
+            return paneTitle
+        }
+        return raw
+    }
+
+    func paneReadableName(_ pane: TmuxPane) -> String {
+        paneReadableTitle(title: pane.title, command: pane.command, host: hostShort, path: pane.path)
+    }
+
+    func paneReadableDetail(_ pane: TmuxPane) -> String? {
+        paneReadableSubtitle(title: pane.title, command: pane.command, host: hostShort, path: pane.path)
+    }
+
     // MARK: - Refresh
 
     /// Reload sessions + windows + panes in parallel. Sessions sort most-active first.
@@ -279,11 +323,6 @@ final class AppState {
         await run(success: "Split pane") { try await $0.splitWindow(paneId: p.id, horizontal: horizontal, cwd: p.path) }
     }
     func breakPane(_ p: TmuxPane) async { await run(success: "Broke out pane") { try await $0.breakPane(paneId: p.id) } }
-
-    /// The pane's display label: its custom title when set, else its command.
-    func paneName(_ p: TmuxPane) -> String {
-        paneDisplayName(title: p.title, command: p.command, host: hostShort)
-    }
 
     /// The pane's user-set title, or "" when it is still the tmux default
     /// (used to seed the rename field).

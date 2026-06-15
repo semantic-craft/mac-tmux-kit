@@ -67,12 +67,11 @@ struct MenuBarPopoverView: View {
             ScrollView {
                 VStack(spacing: 3) {
                     ForEach(app.sessions) { session in
-                        let window = activeWindow(for: session)
+                        let window = app.activeWindow(in: session)
                         SessionRow(
                             session: session,
                             activeWindow: window,
-                            activePane: activePane(in: window),
-                            hostShort: app.hostShort
+                            activePane: app.activePane(in: window)
                         ) {
                             Task { await app.activateFromMenuBar(session) }
                         }
@@ -100,17 +99,6 @@ struct MenuBarPopoverView: View {
         let rowHeight: CGFloat = 68
         let padding: CGFloat = 12
         return min(CGFloat(app.sessions.count) * rowHeight + padding, 380)
-    }
-
-    private func activeWindow(for session: TmuxSession) -> TmuxWindow? {
-        let windows = app.tree.windows(in: session.id)
-        return windows.first { $0.active } ?? windows.first
-    }
-
-    private func activePane(in window: TmuxWindow?) -> TmuxPane? {
-        guard let window else { return nil }
-        let panes = app.tree.panes(in: window.id)
-        return panes.first { $0.active } ?? panes.first
     }
 
     private var footer: some View {
@@ -162,10 +150,10 @@ struct MenuBarPopoverView: View {
 /// One session row: status dot + name + current folder, with the window count.
 /// Filled green dot = a client is attached.
 private struct SessionRow: View {
+    @Environment(AppState.self) private var app
     let session: TmuxSession
     let activeWindow: TmuxWindow?
     let activePane: TmuxPane?
-    let hostShort: String
     let onSwitch: () -> Void
 
     @State private var hovering = false
@@ -221,20 +209,18 @@ private struct SessionRow: View {
 
     private var activeWorkLabel: String {
         guard let activeWindow else { return "No windows" }
-        let windowName = "\(activeWindow.index): \(activeWindow.name)"
+        let windowReadableName = app.windowReadableName(activeWindow, activePane: activePane)
+        let windowName = "\(activeWindow.index): \(windowReadableName)"
         guard let activePane else { return windowName }
-        let paneName = paneDisplayName(
-            title: activePane.title,
-            command: activePane.command,
-            host: hostShort
-        )
-        if paneName == activeWindow.name { return windowName }
+        let paneName = app.paneReadableName(activePane)
+        if paneName == windowReadableName { return windowName }
         return "\(windowName) · \(paneName)"
     }
 
     private func folder(_ path: String) -> String {
-        let displayPath = activePane?.path.isEmpty == false ? activePane?.path : path
-        guard let displayPath, !displayPath.isEmpty else { return "~" }
-        return URL(fileURLWithPath: displayPath).lastPathComponent
+        if let activePath = activePane?.path, !activePath.isEmpty {
+            return pathLastComponent(activePath) ?? "~"
+        }
+        return pathLastComponent(path) ?? "~"
     }
 }

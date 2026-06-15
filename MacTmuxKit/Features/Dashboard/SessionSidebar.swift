@@ -111,7 +111,7 @@ private struct SessionSidebarRow: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
-                Text(folder(session.path))
+                Text(folder(app.sessionDisplayPath(session)))
                     .font(Theme.Font.rowSubtitle)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -127,7 +127,7 @@ private struct SessionSidebarRow: View {
                     .buttonStyle(.borderless)
                     .help("Switch and focus")
                 } else {
-                    Text("\(session.windowCount)w")
+                    Text(countText)
                         .font(Theme.Font.metric)
                         .foregroundStyle(.secondary)
                 }
@@ -150,6 +150,11 @@ private struct SessionSidebarRow: View {
     }
 
     private func folder(_ path: String) -> String {
-        path.isEmpty ? "~" : URL(fileURLWithPath: path).lastPathComponent
+        pathLastComponent(path) ?? "~"
+    }
+
+    private var countText: String {
+        let panes = app.paneCount(in: session)
+        return panes > 0 ? "\(session.windowCount)w · \(panes)p" : "\(session.windowCount)w"
     }
 }

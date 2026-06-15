@@ -35,4 +35,54 @@ final class PaneNamingTests: XCTestCase {
         XCTAssertNil(paneCustomTitle(title: "   ", command: "bash", host: host))
         XCTAssertEqual(paneDisplayName(title: "   ", command: "bash", host: host), "bash")
     }
+
+    func testReadableTitlePrefersCustomTitle() {
+        XCTAssertEqual(
+            paneReadableTitle(
+                title: "p09-driver",
+                command: "2.1.177",
+                host: host,
+                path: "/Users/example/Projects/paper-annotator"
+            ),
+            "p09-driver"
+        )
+        XCTAssertEqual(
+            paneReadableSubtitle(
+                title: "p09-driver",
+                command: "2.1.177",
+                host: host,
+                path: "/Users/example/Projects/paper-annotator"
+            ),
+            "paper-annotator · 2.1.177"
+        )
+    }
+
+    func testReadableTitleUsesFolderWhenTitleIsDefaultHost() {
+        XCTAssertEqual(
+            paneReadableTitle(
+                title: host,
+                command: "2.1.177",
+                host: host,
+                path: "/Users/example/Projects/rime-law-next"
+            ),
+            "rime-law-next"
+        )
+        XCTAssertEqual(
+            paneReadableSubtitle(
+                title: host,
+                command: "2.1.177",
+                host: host,
+                path: "/Users/example/Projects/rime-law-next"
+            ),
+            "2.1.177"
+        )
+    }
+
+    func testReadableTitleFallsBackToCommandWithoutPath() {
+        XCTAssertEqual(
+            paneReadableTitle(title: host, command: "bash", host: host, path: ""),
+            "bash"
+        )
+        XCTAssertNil(paneReadableSubtitle(title: host, command: "bash", host: host, path: ""))
+    }
 }
