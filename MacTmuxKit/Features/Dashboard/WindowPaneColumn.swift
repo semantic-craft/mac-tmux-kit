@@ -22,14 +22,19 @@ struct WindowPaneColumn: View {
                 VStack(spacing: 0) {
                     List(selection: $selectedPaneId) {
                         ForEach(windows) { window in
+                            let windowPanes = app.tree.panes(in: window.id)
+                            let activePane = windowPanes.first { $0.active } ?? windowPanes.first
                             Section {
-                                ForEach(app.tree.panes(in: window.id)) { pane in
+                                ForEach(windowPanes) { pane in
                                     PaneRow(pane: pane)
                                         .tag(pane.id)
                                         .contextMenu { paneMenu(pane) }
                                 }
                             } header: {
-                                WindowHeaderRow(window: window)
+                                WindowHeaderRow(
+                                    window: window,
+                                    title: app.windowReadableName(window, activePane: activePane)
+                                )
                                     .contextMenu { windowMenu(window) }
                             }
                         }
@@ -112,6 +117,7 @@ struct WindowPaneColumn: View {
 private struct WindowHeaderRow: View {
     @Environment(AppState.self) private var app
     let window: TmuxWindow
+    let title: String
     @State private var editing = false
     @State private var draft = ""
     @State private var hovering = false
@@ -131,7 +137,7 @@ private struct WindowHeaderRow: View {
                     onCommit: commit, onCancel: { editing = false }
                 )
             } else {
-                Text("\(window.index): \(window.name)")
+                Text("\(window.index): \(title)")
                     .font(Theme.Font.sectionHeader)
                 if window.active {
                     Image(systemName: "checkmark.circle.fill")
@@ -183,11 +189,11 @@ private struct PaneRow: View {
                         onCommit: commit, onCancel: { editing = false }
                     )
                 } else {
-                    Text(app.paneName(pane))
+                    Text("\(pane.index): \(app.paneReadableName(pane))")
                         .font(Theme.Font.rowTitlePlain)
                         .lineLimit(1)
                 }
-                Text(folderName(pane.path))
+                Text(detailText)
                     .font(Theme.Font.rowSubtitle)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -217,7 +223,7 @@ private struct PaneRow: View {
         Task { await app.renamePane(pane, to: title) }
     }
 
-    private func folderName(_ path: String) -> String {
-        path.isEmpty ? "" : URL(fileURLWithPath: path).lastPathComponent
+    private var detailText: String {
+        app.paneReadableDetail(pane) ?? pane.id
     }
 }
