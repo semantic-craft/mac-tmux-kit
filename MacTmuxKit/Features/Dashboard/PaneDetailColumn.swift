@@ -31,9 +31,9 @@ struct PaneDetailColumn: View {
     private func header(_ pane: TmuxPane) -> some View {
         HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(pane.command)
+                Text("\(pane.index): \(app.paneReadableName(pane))")
                     .font(Theme.Font.detailTitle)
-                Text("\(pane.id)  ·  \(pane.width)x\(pane.height)  ·  pid \(pane.pid)")
+                Text(detailLine(pane))
                     .font(Theme.Font.metric)
                     .foregroundStyle(.secondary)
             }
@@ -70,6 +70,16 @@ struct PaneDetailColumn: View {
                 ProgressView().controlSize(.small)
             }
         }
+    }
+
+    private func detailLine(_ pane: TmuxPane) -> String {
+        var parts: [String] = [pane.id, "\(pane.width)x\(pane.height)", "pid \(pane.pid)"]
+        if let detail = app.paneReadableDetail(pane) {
+            parts.append(detail)
+        } else if !pane.command.isEmpty {
+            parts.append(pane.command)
+        }
+        return parts.joined(separator: "  ·  ")
     }
 
     private func load(_ pane: TmuxPane) async {
