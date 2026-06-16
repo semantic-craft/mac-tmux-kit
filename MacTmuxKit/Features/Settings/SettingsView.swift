@@ -185,6 +185,7 @@ private struct FocusPane: View {
 private struct BackupPane: View {
     @Environment(AppState.self) private var app
     @AppStorage("resurrectScriptsPath") private var override = ""
+    @AppStorage("resurrectRestoreProcesses") private var restoreProcesses = true
     @State private var status = ""
     @State private var working = false
     @State private var confirmRestore = false
@@ -195,6 +196,7 @@ private struct BackupPane: View {
                 LabeledContent("Scripts", value: app.resurrectScriptsDir?.path ?? "Not found")
                 LabeledContent("Last saved", value: lastSavedText)
                 TextField("Scripts path override", text: $override, prompt: Text("Auto-detect"))
+                Toggle("Restore saved commands", isOn: $restoreProcesses)
             }
             Section {
                 HStack(spacing: 10) {
@@ -219,7 +221,7 @@ private struct BackupPane: View {
             Button("Restore", role: .destructive) { perform { await app.resurrectRestore() } }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This recreates the saved sessions, windows, and panes.")
+            Text(restoreProcesses ? "This recreates the saved sessions, windows, panes, and saved commands." : "This recreates the saved sessions, windows, and panes.")
         }
     }
 
