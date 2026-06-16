@@ -50,6 +50,8 @@ final class AppState {
     let focusService = GhosttyFocusService()
     private var commandPalette: CommandPaletteController?
     private var dashboard: DashboardWindowController?
+    private var console: ConsoleWindowController?
+    private var cheatsheet: CheatsheetWindowController?
     private var autoRefreshTask: Task<Void, Never>?
 
     init() {
@@ -73,6 +75,8 @@ final class AppState {
         commandPalette = palette
         let dash = DashboardWindowController(appState: self)
         dashboard = dash
+        console = ConsoleWindowController(appState: self)
+        cheatsheet = CheatsheetWindowController()
 
         KeyboardShortcuts.onKeyDown(for: .toggleCommandPalette) { [weak palette] in
             palette?.toggle()
@@ -108,6 +112,8 @@ final class AppState {
 
     func showCommandPalette() { commandPalette?.show() }
     func showDashboard() { dashboard?.show() }
+    func showConsole() { console?.show() }
+    func showCheatsheet() { cheatsheet?.show() }
 
     /// Open the Dashboard focused on a specific session (menu-bar "Open in
     /// Dashboard" click action).
@@ -361,16 +367,44 @@ final class AppState {
 
     /// Returns nil on success, else an error message.
     func resurrectSave() async -> String? {
-        guard let service, let dir = resurrectScriptsDir else { return "tmux-resurrect not found." }
-        do { try await service.resurrectSave(scriptsDir: dir); return nil }
-        catch { return message(for: error) }
+        guard let service, let dir = resurrectScriptsDir else {
+            let text = "tmux-resurrect not found."
+            statusMessage = text
+            showToast(text, kind: .failure)
+            return text
+        }
+        do {
+            try await service.resurrectSave(scriptsDir: dir)
+            showToast("Saved layout", kind: .success)
+            return nil
+        } catch {
+            let text = message(for: error)
+            statusMessage = text
+            showToast(text, kind: .failure)
+            return text
+        }
     }
 
     func resurrectRestore() async -> String? {
-        guard let service, let dir = resurrectScriptsDir else { return "tmux-resurrect not found." }
+        guard let service, let dir = resurrectScriptsDir else {
+            let text = "tmux-resurrect not found."
+            statusMessage = text
+            showToast(text, kind: .failure)
+            return text
+        }
         let result: String?
-        do { try await service.resurrectRestore(scriptsDir: dir); result = nil }
-        catch { result = message(for: error) }
+        let restoreProcesses = UserDefaults.standard.object(forKey: "resurrectRestoreProcesses") as? Bool ?? true
+        do {
+            try await service.resurrectRestore(scriptsDir: dir, restoreProcesses: restoreProcesses)
+            showToast(restoreProcesses ? "Restored layout and commands" : "Restored layout", kind: .success)
+            result = nil
+        } catch {
+            result = message(for: error)
+            if let result {
+                statusMessage = result
+                showToast(result, kind: .failure)
+            }
+        }
         await refresh()
         return result
     }

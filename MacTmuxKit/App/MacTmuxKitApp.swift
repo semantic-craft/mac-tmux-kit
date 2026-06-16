@@ -13,43 +13,20 @@ struct MacTmuxKitApp: App {
     // lazily on the first scene render — for a menu-bar app that's the first
     // popover open, which left Hyper+D and the palette hotkey dead until then.
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
-    @AppStorage("showMenuBarIcon") private var showMenuBarIcon = true
 
     private var appState: AppState { delegate.appState }
 
     var body: some Scene {
-        MenuBarExtra("Tmux Kit", image: "MenuBarIcon", isInserted: $showMenuBarIcon) {
-            MenuBarPopoverView()
-                .environment(appState)
-        }
-        .menuBarExtraStyle(.window)
-
-        // Dashboard is an AppKit window (DashboardWindowController) so the global
-        // hotkey can summon it even when the menu-bar icon is hidden.
-
-        Window("tmux Console", id: WindowID.console) {
-            ConsoleView()
-                .environment(appState)
-        }
-        .windowResizability(.contentMinSize)
-
-        Window("tmux Cheatsheet", id: WindowID.cheatsheet) {
-            CheatsheetView()
-        }
-        .windowResizability(.contentMinSize)
+        // The menu-bar icon and its popover are AppKit-owned (`NSStatusItem` +
+        // `NSPopover`) so opening the popover does not depend on SwiftUI's
+        // Control Center-hosted `MenuBarExtra(.window)` scene. Console,
+        // Cheatsheet, Dashboard, and Command Palette are AppKit-managed windows.
 
         Settings {
             SettingsView()
                 .environment(appState)
         }
     }
-}
-
-/// Stable identifiers for `openWindow`. (The Dashboard is an AppKit window, not
-/// a scene, so it isn't here.)
-enum WindowID {
-    static let console = "console"
-    static let cheatsheet = "cheatsheet"
 }
 
 /// Owns the shared `AppState` and registers global hotkeys at the right moment.
@@ -60,14 +37,92 @@ enum WindowID {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let appState = AppState()
+    private var statusItem: NSStatusItem?
+    private let popover = NSPopover()
+    private var defaultsObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         appState.registerHotkeys()
         appState.startAutoRefresh()
         AppActivationPolicy.applyDockPreference()
+        configurePopover()
+        configureStatusItem()
+        defaultsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.configureStatusItem()
+            }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        if let defaultsObserver {
+            NotificationCenter.default.removeObserver(defaultsObserver)
+        }
         appState.stopAutoRefresh()
+    }
+
+    private var menuBarIconVisible: Bool {
+        if UserDefaults.standard.object(forKey: "showMenuBarIcon") == nil { return true }
+        return UserDefaults.standard.bool(forKey: "showMenuBarIcon")
+    }
+
+    private func configurePopover() {
+        popover.behavior = .transient
+        popover.contentSize = NSSize(width: 390, height: 560)
+        popover.animates = true
+    }
+
+    private func configureStatusItem() {
+        if menuBarIconVisible {
+            createStatusItemIfNeeded()
+        } else {
+            removeStatusItem()
+        }
+    }
+
+    private func createStatusItemIfNeeded() {
+        guard statusItem == nil else { return }
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        if let button = item.button {
+            if let icon = NSImage(named: "MenuBarIcon") {
+                icon.isTemplate = true
+                button.image = icon
+                button.imagePosition = .imageOnly
+            } else {
+                button.image = nil
+                button.title = "tmux"
+            }
+            button.toolTip = "Tmux Kit"
+            button.setAccessibilityLabel("Tmux Kit")
+            button.target = self
+            button.action = #selector(togglePopover(_:))
+        }
+        statusItem = item
+    }
+
+    private func removeStatusItem() {
+        popover.performClose(nil)
+        if let statusItem {
+            NSStatusBar.system.removeStatusItem(statusItem)
+            self.statusItem = nil
+        }
+    }
+
+    @objc private func togglePopover(_ sender: Any?) {
+        guard let button = statusItem?.button else { return }
+        if popover.isShown {
+            popover.performClose(sender)
+            return
+        }
+        popover.contentViewController = NSHostingController(
+            rootView: MenuBarPopoverView().environment(appState)
+        )
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        popover.contentViewController?.view.window?.makeKey()
+        Task { await appState.refresh() }
     }
 }
