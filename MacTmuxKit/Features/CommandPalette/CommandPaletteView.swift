@@ -15,10 +15,12 @@ struct CommandPaletteItem: Identifiable {
 /// Return to switch + focus, Esc to dismiss.
 struct CommandPaletteView: View {
     @Environment(AppState.self) private var app
+    @AppStorage("resurrectRestoreProcesses") private var restoreProcesses = true
     let dismiss: () -> Void
 
     @State private var query = ""
     @State private var selection = 0
+    @State private var confirmRestore = false
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -39,6 +41,15 @@ struct CommandPaletteView: View {
         .onKeyPress(.downArrow) { move(1) }
         .onKeyPress(.upArrow) { move(-1) }
         .onKeyPress(.escape) { dismiss(); return .handled }
+        .confirmationDialog("Restore last saved layout?", isPresented: $confirmRestore) {
+            Button("Restore", role: .destructive) {
+                dismiss()
+                Task { _ = await app.resurrectRestore() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(restoreProcesses ? "This recreates the saved sessions, windows, panes, and saved commands." : "This recreates the saved sessions, windows, and panes.")
+        }
     }
 
     // MARK: - Subviews
@@ -150,6 +161,8 @@ struct CommandPaletteView: View {
         let actions = [
             CommandPaletteItem(id: "act:save", title: "Save layout", subtitle: "tmux-resurrect",
                                icon: "tray.and.arrow.down", attached: false) { _ = await app.resurrectSave() },
+            CommandPaletteItem(id: "act:restore", title: "Restore layout", subtitle: "tmux-resurrect",
+                               icon: "tray.and.arrow.up", attached: false) { _ = await app.resurrectRestore() },
             CommandPaletteItem(id: "act:refresh", title: "Refresh", subtitle: "",
                                icon: "arrow.clockwise", attached: false) { await app.refresh() },
         ]
@@ -181,6 +194,10 @@ struct CommandPaletteView: View {
     }
 
     private func run(_ item: CommandPaletteItem) {
+        if item.id == "act:restore" {
+            confirmRestore = true
+            return
+        }
         dismiss()
         Task { await item.run() }
     }

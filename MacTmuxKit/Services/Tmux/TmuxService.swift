@@ -99,8 +99,8 @@ final class TmuxService: Sendable {
 
     /// Run a tmux subcommand (internal so the per-domain extensions can use it).
     @discardableResult
-    func run(_ args: [String]) async throws -> String {
-        let result = try await ProcessRunner.run(executable: binary, arguments: ["-S", socket] + args)
+    func run(_ args: [String], timeout: TimeInterval = 5) async throws -> String {
+        let result = try await ProcessRunner.run(executable: binary, arguments: ["-S", socket] + args, timeout: timeout)
         guard result.exitCode == 0 else {
             throw TmuxError.classify(stderr: result.stderr, code: result.exitCode)
         }

@@ -15,8 +15,9 @@ final class DashboardWindowController: NSObject, NSWindowDelegate {
     }
 
     func show() {
+        let shouldEnter = window?.isVisible != true
         if window == nil { window = makeWindow() }
-        AppActivationPolicy.enter()
+        if shouldEnter { AppActivationPolicy.enter() }
         window?.makeKeyAndOrderFront(nil)
     }
 
@@ -39,6 +40,80 @@ final class DashboardWindowController: NSObject, NSWindowDelegate {
         w.contentViewController = NSHostingController(
             rootView: DashboardView().environment(appState)
         )
+        w.delegate = self
+        return w
+    }
+}
+
+@MainActor
+final class ConsoleWindowController: NSObject, NSWindowDelegate {
+    private var window: NSWindow?
+    private let appState: AppState
+
+    init(appState: AppState) {
+        self.appState = appState
+        super.init()
+    }
+
+    func show() {
+        let shouldEnter = window?.isVisible != true
+        if window == nil { window = makeWindow() }
+        if shouldEnter { AppActivationPolicy.enter() }
+        window?.makeKeyAndOrderFront(nil)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        AppActivationPolicy.leave()
+    }
+
+    private func makeWindow() -> NSWindow {
+        let w = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 760, height: 520),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        w.title = "tmux Console"
+        w.isReleasedWhenClosed = false
+        w.minSize = NSSize(width: 620, height: 420)
+        w.center()
+        w.setFrameAutosaveName("TmuxKitConsole")
+        w.contentViewController = NSHostingController(
+            rootView: ConsoleView().environment(appState)
+        )
+        w.delegate = self
+        return w
+    }
+}
+
+@MainActor
+final class CheatsheetWindowController: NSObject, NSWindowDelegate {
+    private var window: NSWindow?
+
+    func show() {
+        let shouldEnter = window?.isVisible != true
+        if window == nil { window = makeWindow() }
+        if shouldEnter { AppActivationPolicy.enter() }
+        window?.makeKeyAndOrderFront(nil)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        AppActivationPolicy.leave()
+    }
+
+    private func makeWindow() -> NSWindow {
+        let w = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 700, height: 620),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        w.title = "tmux Cheatsheet"
+        w.isReleasedWhenClosed = false
+        w.minSize = NSSize(width: 560, height: 460)
+        w.center()
+        w.setFrameAutosaveName("TmuxKitCheatsheet")
+        w.contentViewController = NSHostingController(rootView: CheatsheetView())
         w.delegate = self
         return w
     }
