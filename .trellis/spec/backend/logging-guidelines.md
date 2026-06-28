@@ -21,10 +21,13 @@ Reference files:
 
 ## Debug Snapshots
 
-Future debug snapshot work should be explicit and copyable, not always-on
-logging. It should collect enough local state to explain refresh problems:
-tmux binary path, resolved socket, command exit statuses, parsed session counts,
-and app status text.
+Debug snapshot work should be explicit and copyable, not always-on logging. It
+collects enough local state to explain refresh problems: tmux binary path,
+resolved socket, read failures, parsed session counts, and app status text.
+
+`AppState.debugSnapshot()` owns the text contract. Keep it read-only: it may
+call tmux list/display read methods, but it must not mutate tmux state, capture
+pane content, or persist logs.
 
 Never include by default:
 

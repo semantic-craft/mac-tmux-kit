@@ -3,7 +3,7 @@
   "name": "copy-tmux-debug-snapshot",
   "title": "Copy tmux debug snapshot",
   "description": "Mirror GitHub issue #6: copy diagnostic snapshot, blocked by refresh state.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,
