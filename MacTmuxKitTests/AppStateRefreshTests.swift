@@ -100,6 +100,71 @@ final class AppStateRefreshTests: XCTestCase {
         XCTAssertEqual(preview.content, "")
         XCTAssertEqual(preview.errorMessage, "can't find pane: %5")
     }
+
+    func testPinnedSessionsLeadMenuBarOrdering() async {
+        let defaults = FakeDefaults(pinnedSessionNames: ["alpha"])
+        let app = AppState(
+            stateReader: FakeTmuxStateReader([
+                .snapshot(.sessions([
+                    .session(id: "$1", name: "alpha", activity: 1),
+                    .session(id: "$2", name: "beta", activity: 3),
+                    .session(id: "$3", name: "gamma", activity: 2),
+                ]))
+            ]),
+            defaults: defaults,
+            preloadTheme: false
+        )
+
+        await app.refresh()
+
+        XCTAssertEqual(app.sessions.map(\.name), ["beta", "gamma", "alpha"])
+        XCTAssertEqual(app.pinnedFirstSessions(limit: 3).map(\.name), ["alpha", "beta", "gamma"])
+    }
+
+    func testPinnedSessionNamesPersistAcrossAppRestart() {
+        let defaults = FakeDefaults()
+        let firstLaunch = AppState(stateReader: FakeTmuxStateReader([.snapshot(.empty)]), defaults: defaults, preloadTheme: false)
+
+        firstLaunch.pinSession(.session(id: "$1", name: "work", activity: 1))
+        let restarted = AppState(stateReader: FakeTmuxStateReader([.snapshot(.empty)]), defaults: defaults, preloadTheme: false)
+
+        XCTAssertTrue(restarted.pinnedSessionNames.contains("work"))
+    }
+
+    func testUnknownPinnedNamesDoNotCreateLiveRows() async {
+        let defaults = FakeDefaults(pinnedSessionNames: ["missing"])
+        let app = AppState(
+            stateReader: FakeTmuxStateReader([
+                .snapshot(.sessions([
+                    .session(id: "$1", name: "live", activity: 1),
+                ]))
+            ]),
+            defaults: defaults,
+            preloadTheme: false
+        )
+
+        await app.refresh()
+
+        XCTAssertEqual(app.pinnedFirstSessions().map(\.name), ["live"])
+    }
+
+    func testRecreatedPinnedSessionNameIsPrioritized() async {
+        let defaults = FakeDefaults(pinnedSessionNames: ["work"])
+        let app = AppState(
+            stateReader: FakeTmuxStateReader([
+                .snapshot(.sessions([
+                    .session(id: "$9", name: "other", activity: 9),
+                    .session(id: "$42", name: "work", activity: 1),
+                ]))
+            ]),
+            defaults: defaults,
+            preloadTheme: false
+        )
+
+        await app.refresh()
+
+        XCTAssertEqual(app.pinnedFirstSessions().first?.id, "$42")
+    }
 }
 
 private struct TmuxSnapshot: Sendable {
@@ -143,6 +208,24 @@ private struct TmuxSnapshot: Sendable {
             layout: ""
         )
         return TmuxSnapshot(sessions: [session], windows: panes.isEmpty ? [] : [window], panes: panes, hostShort: "mac")
+    }
+
+    static func sessions(_ sessions: [TmuxSession]) -> TmuxSnapshot {
+        TmuxSnapshot(sessions: sessions, windows: [], panes: [], hostShort: "mac")
+    }
+}
+
+private extension TmuxSession {
+    static func session(id: String, name: String, activity: TimeInterval) -> TmuxSession {
+        TmuxSession(
+            id: id,
+            name: name,
+            attached: false,
+            windowCount: 0,
+            created: Date(timeIntervalSince1970: 1),
+            activity: Date(timeIntervalSince1970: activity),
+            path: "/tmp"
+        )
     }
 }
 
@@ -243,5 +326,25 @@ private actor FakeTmuxStateReader: TmuxStateReading, TmuxPaneCapturing {
         case .error(let error):
             throw error
         }
+    }
+}
+
+private final class FakeDefaults: UserDefaultsStoring {
+    private var arrays: [String: [String]]
+
+    init(pinnedSessionNames: [String] = []) {
+        arrays = pinnedSessionNames.isEmpty ? [:] : ["pinnedSessionNames": pinnedSessionNames]
+    }
+
+    func stringArray(forKey defaultName: String) -> [String]? {
+        arrays[defaultName]
+    }
+
+    func set(_ value: Any?, forKey defaultName: String) {
+        arrays[defaultName] = value as? [String]
+    }
+
+    func synchronize() -> Bool {
+        true
     }
 }

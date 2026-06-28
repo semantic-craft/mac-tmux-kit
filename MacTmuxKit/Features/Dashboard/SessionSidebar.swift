@@ -54,6 +54,11 @@ struct SessionSidebar: View {
 
     @ViewBuilder
     private func menu(for session: TmuxSession) -> some View {
+        Button {
+            app.togglePin(session)
+        } label: {
+            Label(app.isPinned(session) ? "Unpin" : "Pin", systemImage: app.isPinned(session) ? "pin.slash" : "pin")
+        }
         Button("Switch and Focus") { Task { await app.switchTo(session) } }
         Button("Rename") {
             prompt = TextPrompt(
@@ -107,10 +112,18 @@ private struct SessionSidebarRow: View {
                         onCommit: commit, onCancel: { editing = false }
                     )
                 } else {
-                    Text(session.name)
-                        .font(Theme.Font.rowTitle)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                    HStack(spacing: 4) {
+                        Text(session.name)
+                            .font(Theme.Font.rowTitle)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        if app.isPinned(session) {
+                            Image(systemName: "pin.fill")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(Theme.accent)
+                                .accessibilityLabel("Pinned")
+                        }
+                    }
                 }
                 Text(folder(app.sessionDisplayPath(session)))
                     .font(Theme.Font.rowSubtitle)
