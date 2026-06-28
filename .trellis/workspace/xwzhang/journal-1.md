@@ -136,3 +136,36 @@ Implemented copyable tmux debug snapshots from the menu-bar popover: AppState re
 ### Next Steps
 
 - None - task complete
+
+
+## Session 5: Close tmux management task map
+
+**Date**: 2026-06-29
+**Task**: Close tmux management task map
+**Branch**: `codex/readable-tmux-dashboard`
+
+### Summary
+
+Closed the parent Trellis task after all four ready-for-agent children (#3 refresh state, #4 pane preview, #5 pinned sessions, #6 debug snapshot) were implemented, verified, committed, archived, and integrated against the project specs.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `008d465` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
