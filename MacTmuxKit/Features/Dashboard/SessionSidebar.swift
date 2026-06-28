@@ -7,6 +7,7 @@ import TmuxKitCore
 struct SessionSidebar: View {
     @Environment(AppState.self) private var app
     @Binding var selectedSessionId: String?
+    var onRefresh: () -> Void = {}
 
     @State private var prompt: TextPrompt?
     @State private var confirm: ConfirmAction?
@@ -41,7 +42,7 @@ struct SessionSidebar: View {
                 .help("New session")
             }
             ToolbarItem {
-                Button { Task { await app.refresh() } } label: {
+                Button(action: onRefresh) {
                     Image(systemName: "arrow.clockwise")
                 }
                 .help("Refresh")
