@@ -53,6 +53,53 @@ final class AppStateRefreshTests: XCTestCase {
         XCTAssertEqual(sessionReadCount, 2)
         XCTAssertFalse(app.isLoading)
     }
+
+    func testPreviewPaneUsesActivePane() async {
+        let app = AppState(
+            stateReader: FakeTmuxStateReader([
+                .snapshot(.session(name: "work", panes: [
+                    .pane(id: "%1", active: false),
+                    .pane(id: "%2", active: true),
+                ]))
+            ]),
+            preloadTheme: false
+        )
+
+        await app.refresh()
+
+        XCTAssertEqual(app.previewPane(in: "$1")?.id, "%2")
+    }
+
+    func testPreviewPaneFallsBackToFirstPane() async {
+        let app = AppState(
+            stateReader: FakeTmuxStateReader([
+                .snapshot(.session(name: "quiet", panes: [
+                    .pane(id: "%3", active: false),
+                    .pane(id: "%4", active: false),
+                ]))
+            ]),
+            preloadTheme: false
+        )
+
+        await app.refresh()
+
+        XCTAssertEqual(app.previewPane(in: "$1")?.id, "%3")
+    }
+
+    func testCapturePreviewContainsFailure() async {
+        let reader = FakeTmuxStateReader(
+            [.snapshot(.session(name: "broken", panes: [.pane(id: "%5", active: true)]))],
+            captures: ["%5": .error(.noSuchTarget("can't find pane: %5"))]
+        )
+        let app = AppState(stateReader: reader, paneCapturer: reader, preloadTheme: false)
+
+        await app.refresh()
+        let preview = await app.capturePreview(app.previewPane(in: "$1")!)
+
+        XCTAssertTrue(preview.failed)
+        XCTAssertEqual(preview.content, "")
+        XCTAssertEqual(preview.errorMessage, "can't find pane: %5")
+    }
 }
 
 private struct TmuxSnapshot: Sendable {
@@ -75,6 +122,48 @@ private struct TmuxSnapshot: Sendable {
         )
         return TmuxSnapshot(sessions: [session], windows: [], panes: [], hostShort: "mac")
     }
+
+    static func session(name: String, panes: [TmuxPane]) -> TmuxSnapshot {
+        let session = TmuxSession(
+            id: "$1",
+            name: name,
+            attached: false,
+            windowCount: panes.isEmpty ? 0 : 1,
+            created: Date(timeIntervalSince1970: 1),
+            activity: Date(timeIntervalSince1970: 1),
+            path: "/tmp"
+        )
+        let window = TmuxWindow(
+            sessionId: "$1",
+            id: "@1",
+            index: 0,
+            name: "shell",
+            active: true,
+            paneCount: panes.count,
+            layout: ""
+        )
+        return TmuxSnapshot(sessions: [session], windows: panes.isEmpty ? [] : [window], panes: panes, hostShort: "mac")
+    }
+}
+
+private extension TmuxPane {
+    static func pane(id: String, active: Bool) -> TmuxPane {
+        TmuxPane(
+            sessionId: "$1",
+            windowId: "@1",
+            id: id,
+            index: Int(id.dropFirst()) ?? 0,
+            active: active,
+            command: "zsh",
+            pid: 123,
+            width: 80,
+            height: 24,
+            path: "/tmp/project",
+            title: "",
+            left: 0,
+            top: 0
+        )
+    }
 }
 
 private enum FakeResponse: Sendable {
@@ -82,14 +171,25 @@ private enum FakeResponse: Sendable {
     case error(TmuxError)
 }
 
-private actor FakeTmuxStateReader: TmuxStateReading {
+private enum FakeCapture: Sendable {
+    case content(String)
+    case error(TmuxError)
+}
+
+private actor FakeTmuxStateReader: TmuxStateReading, TmuxPaneCapturing {
     private let responses: [FakeResponse]
+    private let captures: [String: FakeCapture]
     private let holdFirstSessionRead: Bool
     private var heldSessionRead: CheckedContinuation<Void, Never>?
     private(set) var sessionReadCount = 0
 
-    init(_ responses: [FakeResponse], holdFirstSessionRead: Bool = false) {
+    init(
+        _ responses: [FakeResponse],
+        captures: [String: FakeCapture] = [:],
+        holdFirstSessionRead: Bool = false
+    ) {
         self.responses = responses
+        self.captures = captures
         self.holdFirstSessionRead = holdFirstSessionRead
     }
 
@@ -124,6 +224,15 @@ private actor FakeTmuxStateReader: TmuxStateReading {
 
     func hostShort() async throws -> String {
         try currentSnapshot().hostShort
+    }
+
+    func capturePane(paneId: String) async throws -> String {
+        switch captures[paneId] ?? .content("") {
+        case .content(let content):
+            return content
+        case .error(let error):
+            throw error
+        }
     }
 
     private func currentSnapshot() throws -> TmuxSnapshot {

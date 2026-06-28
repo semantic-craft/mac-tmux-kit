@@ -23,6 +23,9 @@ radii, and terminal canvas colors.
   backup actions, quiet refresh indicator.
 - Dashboard: three-column `NavigationSplitView` with sessions, windows/panes,
   and pane detail. It should open onto a useful selection, not an empty shell.
+- Dashboard pane preview reloads on open, session/pane selection, and manual
+  refresh. Do not attach pane preview capture to the auto-refresh loop; that
+  becomes accidental streaming.
 - Command palette and console: focused utility windows, keyboard-friendly, no
   visual bulk.
 - Settings: grouped native forms.

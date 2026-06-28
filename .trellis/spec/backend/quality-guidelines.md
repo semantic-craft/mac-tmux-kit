@@ -68,6 +68,16 @@ Do not create independent session caches in UI surfaces. Use `AppState.tree`
 and helper methods such as `activeWindow(in:)`, `activePane(in:)`, and
 `paneCount(in:)`.
 
+## Pane Preview Semantics
+
+Dashboard preview pane selection belongs at the shared state seam. Use
+`AppState.previewPane(in:)` so every caller gets the same active-pane-else-first
+fallback.
+
+Capture failures should stay structured as `PanePreview.errorMessage`; do not
+turn tmux stderr into terminal content. `PaneDetailColumn` owns the contained
+fallback UI.
+
 ## Verification
 
 For Core-only changes:

@@ -6,9 +6,11 @@ import TmuxKitCore
 /// bar, and the captured pane content in monospaced, selectable text.
 struct PaneDetailColumn: View {
     @Environment(AppState.self) private var app
+    let sessionId: String?
     let paneId: String?
+    let reloadToken: UUID
 
-    @State private var content: String = ""
+    @State private var preview = PanePreview.empty
     @State private var loading = false
 
     private var pane: TmuxPane? { app.pane(id: paneId) }
@@ -21,7 +23,13 @@ struct PaneDetailColumn: View {
                     Divider()
                     terminal
                 }
-                .task(id: pane.id) { await load(pane) }
+                .task(id: "\(pane.id)-\(reloadToken)") { await load(pane) }
+            } else if sessionId != nil {
+                EmptyStateView(
+                    icon: "rectangle.split.3x1",
+                    title: "No panes",
+                    subtitle: "This session has no pane output to preview"
+                )
             } else {
                 EmptyStateView(icon: "terminal", title: "Select a pane")
             }
@@ -55,41 +63,53 @@ struct PaneDetailColumn: View {
     }
 
     private var terminal: some View {
-        ScrollView([.vertical, .horizontal]) {
-            Text(content.isEmpty ? (loading ? "" : "(empty)") : content)
-                .font(Theme.Font.terminal)
-                .foregroundStyle(content.isEmpty ? Theme.terminalText.opacity(0.5) : Theme.terminalText)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .padding(12)
-        }
-        .background(Theme.terminalBackground)
-        .overlay {
-            // Quiet first-load indicator; reloads keep the old content visible.
-            if loading && content.isEmpty {
-                ProgressView().controlSize(.small)
+        Group {
+            if preview.failed {
+                EmptyStateView(
+                    icon: "exclamationmark.triangle",
+                    title: "Preview unavailable",
+                    subtitle: preview.errorMessage
+                )
+                .background(Theme.terminalBackground)
+            } else {
+                ScrollView([.vertical, .horizontal]) {
+                    Text(preview.content.isEmpty ? (loading ? "" : "(empty)") : preview.content)
+                        .font(Theme.Font.terminal)
+                        .foregroundStyle(preview.content.isEmpty ? Theme.terminalText.opacity(0.5) : Theme.terminalText)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .padding(12)
+                }
+                .background(Theme.terminalBackground)
+                .overlay {
+                    // Quiet first-load indicator; reloads keep the old content visible.
+                    if loading && preview.content.isEmpty {
+                        ProgressView().controlSize(.small)
+                    }
+                }
             }
         }
     }
 
     private func detailLine(_ pane: TmuxPane) -> String {
         var parts: [String] = [pane.id, "\(pane.width)x\(pane.height)", "pid \(pane.pid)"]
-        if let detail = app.paneReadableDetail(pane) {
-            parts.append(detail)
-        } else if !pane.command.isEmpty {
+        if !pane.command.isEmpty {
             parts.append(pane.command)
+        }
+        if !pane.path.isEmpty {
+            parts.append(pane.path)
         }
         return parts.joined(separator: "  ·  ")
     }
 
     private func load(_ pane: TmuxPane) async {
         loading = true
-        content = await app.capture(pane)
+        preview = await app.capturePreview(pane)
         loading = false
     }
 
     private func copy() {
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(content, forType: .string)
+        NSPasteboard.general.setString(preview.content, forType: .string)
     }
 }

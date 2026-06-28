@@ -7,16 +7,19 @@ struct DashboardView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selectedSessionId: String?
     @State private var selectedPaneId: String?
+    @State private var previewReloadToken = UUID()
 
     var body: some View {
         NavigationSplitView {
-            SessionSidebar(selectedSessionId: $selectedSessionId)
+            SessionSidebar(selectedSessionId: $selectedSessionId) {
+                Task { await refreshPreview() }
+            }
                 .navigationSplitViewColumnWidth(min: 200, ideal: 230, max: 300)
         } content: {
             WindowPaneColumn(sessionId: selectedSessionId, selectedPaneId: $selectedPaneId)
                 .navigationSplitViewColumnWidth(min: 260, ideal: 320)
         } detail: {
-            PaneDetailColumn(paneId: selectedPaneId)
+            PaneDetailColumn(sessionId: selectedSessionId, paneId: selectedPaneId, reloadToken: previewReloadToken)
                 .navigationSplitViewColumnWidth(min: 320, ideal: 460)
         }
         .frame(minWidth: 860, minHeight: 500)
@@ -28,13 +31,12 @@ struct DashboardView: View {
         }
         .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: app.toast)
         .task {
-            await app.refresh()
-            applySelection()
+            await refreshPreview()
         }
         .onChange(of: app.dashboardRequest) { _, _ in applySelection() }
         .onChange(of: selectedSessionId) { _, id in
             // Selecting a session reveals its active pane immediately.
-            selectedPaneId = defaultPaneId(for: id)
+            selectedPaneId = app.previewPane(in: id)?.id
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -56,17 +58,18 @@ struct DashboardView: View {
     private func applySelection() {
         if let req = app.dashboardRequest {
             selectedSessionId = req.sessionId
-            selectedPaneId = defaultPaneId(for: req.sessionId)
+            selectedPaneId = app.previewPane(in: req.sessionId)?.id
         } else if selectedSessionId == nil, let first = app.sessions.first {
             selectedSessionId = first.id
-            selectedPaneId = defaultPaneId(for: first.id)
+            selectedPaneId = app.previewPane(in: first.id)?.id
+        } else if app.pane(id: selectedPaneId)?.sessionId != selectedSessionId {
+            selectedPaneId = app.previewPane(in: selectedSessionId)?.id
         }
     }
 
-    /// The pane to show for a session: its active pane, else its first pane.
-    private func defaultPaneId(for sessionId: String?) -> String? {
-        guard let sessionId else { return nil }
-        let panes = app.panes.filter { $0.sessionId == sessionId }
-        return (panes.first(where: \.active) ?? panes.first)?.id
+    private func refreshPreview() async {
+        await app.refresh()
+        applySelection()
+        previewReloadToken = UUID()
     }
 }

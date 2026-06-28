@@ -2,7 +2,7 @@ import Foundation
 
 /// Typed tmux failures, classified from stderr so the UI can react meaningfully
 /// (e.g. render a friendly empty state for `.serverNotRunning` instead of an error).
-enum TmuxError: Error, Equatable {
+enum TmuxError: Error, Equatable, Sendable {
     case binaryNotFound
     case serverNotRunning
     case noSuchTarget(String)
