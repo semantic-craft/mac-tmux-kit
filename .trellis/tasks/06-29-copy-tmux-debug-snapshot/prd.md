@@ -25,14 +25,21 @@ If the CLI can see a tmux session but the UI looks stale or wrong, the next debu
 
 ## Acceptance Criteria
 
-- [ ] The user can trigger a debug snapshot from the UI.
-- [ ] The copied snapshot contains binary path, socket path, refresh status, counts, and session summaries.
-- [ ] A running known tmux session appears in the snapshot.
-- [ ] Snapshot failures are included as text rather than crashing or showing a silent failure.
-- [ ] Snapshot action is read-only with respect to tmux.
-- [ ] Manual verification copies a snapshot while a known session is running and checks that the session name is present.
+- [x] The user can trigger a debug snapshot from the UI.
+- [x] The copied snapshot contains binary path, socket path, refresh status, counts, and session summaries.
+- [x] A running known tmux session appears in the snapshot.
+- [x] Snapshot failures are included as text rather than crashing or showing a silent failure.
+- [x] Snapshot action is read-only with respect to tmux.
+- [x] Manual verification copies a snapshot while a known session is running and checks that the session name is present.
 
 ## Notes
 
 - This is not a logging subsystem.
 - Keep the output human-readable and suitable for pasting into an issue or chat.
+
+## Verification
+
+- `xcodebuild test -scheme MacTmuxKit -destination 'platform=macOS'`: PASS, 12 app tests. Xcode printed the existing CoreSimulator version warning, but macOS tests completed successfully.
+- `./scripts/build-app.sh`: PASS, installed and launched `/Applications/MacTmuxKit.app`.
+- Manual UI smoke: opened the MacTmuxKit menu-bar popover with System Events, clicked the Actions row for `Copy Debug Snapshot`, and read the clipboard.
+- Manual clipboard snapshot included `binary: /opt/homebrew/bin/tmux`, `socket: /tmp/tmux-501/default`, app/fresh counts `sessions=2 windows=2 panes=4`, `failures: none`, and the running session names `develop` and `taiwan`.

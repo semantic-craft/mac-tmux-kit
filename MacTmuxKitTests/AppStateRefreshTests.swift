@@ -165,6 +165,43 @@ final class AppStateRefreshTests: XCTestCase {
 
         XCTAssertEqual(app.pinnedFirstSessions().first?.id, "$42")
     }
+
+    func testDebugSnapshotContainsMetadataAndKnownSession() async {
+        let app = AppState(
+            service: TmuxService(binary: URL(fileURLWithPath: "/bin/tmux")),
+            stateReader: FakeTmuxStateReader([
+                .snapshot(.session(name: "taiwan", panes: [.pane(id: "%9", active: true)]))
+            ]),
+            preloadTheme: false
+        )
+
+        await app.refresh()
+        let snapshot = await app.debugSnapshot()
+
+        XCTAssertTrue(snapshot.contains("binary: /bin/tmux"))
+        XCTAssertTrue(snapshot.contains("socket: "))
+        XCTAssertTrue(snapshot.contains("counts: sessions=1 windows=1 panes=1"))
+        XCTAssertTrue(snapshot.contains("$1 \"taiwan\""))
+        XCTAssertTrue(snapshot.contains("@1 index=0 active=true name=\"shell\""))
+        XCTAssertTrue(snapshot.contains("%9 index=9 active=true command=\"zsh\""))
+    }
+
+    func testDebugSnapshotIncludesReadFailures() async {
+        let app = AppState(
+            service: TmuxService(binary: URL(fileURLWithPath: "/bin/tmux")),
+            stateReader: FakeTmuxStateReader([.error(.cli(stderr: "socket denied", code: 1))]),
+            preloadTheme: false
+        )
+
+        let snapshot = await app.debugSnapshot()
+
+        XCTAssertTrue(snapshot.contains("failures:"))
+        XCTAssertTrue(snapshot.contains("listSessions: socket denied"))
+        XCTAssertTrue(snapshot.contains("listAllWindows: socket denied"))
+        XCTAssertTrue(snapshot.contains("listAllPanes: socket denied"))
+        XCTAssertTrue(snapshot.contains("hostShort: socket denied"))
+        XCTAssertTrue(snapshot.contains("sessions\n  none"))
+    }
 }
 
 private struct TmuxSnapshot: Sendable {
