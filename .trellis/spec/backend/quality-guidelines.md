@@ -76,6 +76,12 @@ For Core-only changes:
 cd Core && swift test
 ```
 
+For AppState/service seam changes:
+
+```sh
+xcodebuild test -scheme MacTmuxKit -destination 'platform=macOS'
+```
+
 For app or service changes that affect runtime behavior:
 
 ```sh

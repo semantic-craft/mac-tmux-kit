@@ -58,10 +58,28 @@ targets:
         INFOPLIST_KEY_NSHumanReadableCopyright: ""
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
+  MacTmuxKitTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: MacTmuxKitTests
+    dependencies:
+      - target: MacTmuxKit
+      - package: TmuxKitCore
+        product: TmuxKitCore
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+
 schemes:
   MacTmuxKit:
     build:
       targets:
         MacTmuxKit: all
+        MacTmuxKitTests: [test]
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - name: MacTmuxKitTests

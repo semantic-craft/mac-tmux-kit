@@ -34,6 +34,7 @@ Reference files:
 - `Core/Sources/TmuxKitCore/TmuxParser.swift`
 - `Core/Sources/TmuxKitCore/TmuxTree.swift`
 - `Core/Tests/TmuxKitCoreTests/TmuxParserTests.swift`
+- `MacTmuxKitTests/AppStateRefreshTests.swift` for app-level state seam tests.
 
 ## Service Adapters
 
@@ -85,6 +86,8 @@ Keep local build, run, signing, and release mechanics in `scripts/`.
 Known commands:
 
 - `cd Core && swift test` for pure domain and parser tests.
+- `xcodebuild test -scheme MacTmuxKit -destination 'platform=macOS'` for
+  app-level unit tests hosted by the macOS app.
 - `./scripts/build-app.sh` for a signed app installed to `/Applications`.
 - `./scripts/run.sh` for debug build, re-sign, and relaunch while preserving
   Accessibility permission.
