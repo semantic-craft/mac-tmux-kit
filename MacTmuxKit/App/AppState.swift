@@ -53,6 +53,7 @@ final class AppState {
     private var console: ConsoleWindowController?
     private var cheatsheet: CheatsheetWindowController?
     private var autoRefreshTask: Task<Void, Never>?
+    private var refreshAgain = false
 
     init() {
         let override = UserDefaults.standard.string(forKey: "tmuxBinaryPath")
@@ -97,7 +98,7 @@ final class AppState {
             while !Task.isCancelled {
                 await self?.refresh()
                 do {
-                    try await Task.sleep(nanoseconds: 5_000_000_000)
+                    try await Task.sleep(nanoseconds: 3_000_000_000)
                 } catch {
                     break
                 }
@@ -197,9 +198,18 @@ final class AppState {
             statusMessage = TmuxError.binaryNotFound.userMessage
             return
         }
-        guard !isLoading else { return }
+        guard !isLoading else {
+            refreshAgain = true
+            return
+        }
         isLoading = true
-        defer { isLoading = false }
+        defer {
+            isLoading = false
+            if refreshAgain {
+                refreshAgain = false
+                Task { [weak self] in await self?.refresh() }
+            }
+        }
         do {
             async let s = service.listSessions()
             async let w = service.listAllWindows()
