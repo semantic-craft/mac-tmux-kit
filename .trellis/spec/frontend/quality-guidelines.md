@@ -50,6 +50,12 @@ For UI-only source changes, run the app build path:
 ./scripts/run.sh
 ```
 
+For shared app state, lifecycle, or UI-triggered refresh behavior, run:
+
+```sh
+xcodebuild test -scheme MacTmuxKit -destination 'platform=macOS'
+```
+
 For installed-app behavior, run:
 
 ```sh
