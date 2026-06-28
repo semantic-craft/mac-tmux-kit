@@ -68,8 +68,14 @@ struct MenuBarPopoverView: View {
 
             Spacer(minLength: 8)
 
-            IconButton(systemName: "arrow.clockwise", help: "Refresh") {
-                Task { await app.refresh() }
+            if app.isLoading {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(width: 26, height: 26)
+            } else {
+                IconButton(systemName: "arrow.clockwise", help: "Refresh") {
+                    Task { await app.refresh() }
+                }
             }
             IconButton(systemName: "gearshape", help: "Settings") {
                 NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)

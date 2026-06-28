@@ -19,6 +19,7 @@ final class DashboardWindowController: NSObject, NSWindowDelegate {
         if window == nil { window = makeWindow() }
         if shouldEnter { AppActivationPolicy.enter() }
         window?.makeKeyAndOrderFront(nil)
+        Task { await appState.refresh() }
     }
 
     func windowWillClose(_ notification: Notification) {
