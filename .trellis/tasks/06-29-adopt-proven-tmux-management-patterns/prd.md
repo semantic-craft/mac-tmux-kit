@@ -28,12 +28,26 @@ Tmux Kit is the local macOS control surface for the user's tmux sessions, window
 
 ## Acceptance Criteria
 
-- [ ] Each child task has its own Trellis PRD and can be implemented independently.
-- [ ] GitHub issues remain the external tracker; Trellis tasks hold repo-local working context.
-- [ ] Implementation tasks do not start until `.trellis/spec/` is bootstrapped for this SwiftUI/AppKit/tmux project or the task explicitly lists the temporary specs it relies on.
-- [ ] The final integration keeps Dashboard, menu-bar popover, command palette, tmux service, and Core model behavior consistent.
+- [x] Each child task has its own Trellis PRD and can be implemented independently.
+- [x] GitHub issues remain the external tracker; Trellis tasks hold repo-local working context.
+- [x] Implementation tasks do not start until `.trellis/spec/` is bootstrapped for this SwiftUI/AppKit/tmux project or the task explicitly lists the temporary specs it relies on.
+- [x] The final integration keeps Dashboard, menu-bar popover, command palette, tmux service, and Core model behavior consistent.
 
 ## Notes
 
 - Reference projects: https://github.com/devload/TmuxBar and https://github.com/daxliar/tmux-bar.
 - Main lesson from those projects: use lightweight refresh and clear stale/empty/error state before considering heavyweight tmux control mode.
+
+## Completion Summary
+
+- GitHub #3 / `06-29-finish-trustworthy-refresh-state`: implemented trustworthy refresh state, refresh coalescing, and app tests.
+- GitHub #4 / `06-29-preview-selected-session-pane`: implemented selected-session active pane preview with first-pane fallback and contained capture failures.
+- GitHub #5 / `06-29-pin-important-tmux-sessions`: implemented persistent pinned session names, menu-bar pinned-first ordering, and Dashboard pin affordances.
+- GitHub #6 / `06-29-copy-tmux-debug-snapshot`: implemented a read-only copyable debug snapshot from the menu-bar popover.
+
+## Integration Verification
+
+- `xcodebuild test -scheme MacTmuxKit -destination 'platform=macOS'`: PASS, 12 app tests.
+- `./scripts/build-app.sh`: PASS, installed and launched `/Applications/MacTmuxKit.app`.
+- Real tmux smoke state included running `develop` and `taiwan` sessions.
+- Manual menu-bar debug snapshot copy verified the clipboard contained binary/socket metadata, counts, no read failures, and both running session names.
