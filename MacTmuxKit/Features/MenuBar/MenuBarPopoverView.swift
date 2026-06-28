@@ -143,7 +143,7 @@ struct MenuBarPopoverView: View {
                     subtitle: "Restore a saved layout or open Ghostty"
                 )
             } else {
-                ForEach(Array(app.sessions.prefix(visibleSessionLimit))) { session in
+                ForEach(app.pinnedFirstSessions(limit: visibleSessionLimit)) { session in
                     let window = app.activeWindow(in: session)
                     let pane = app.activePane(in: window)
                     MenuItemRow(

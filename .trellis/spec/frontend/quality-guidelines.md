@@ -20,9 +20,12 @@ radii, and terminal canvas colors.
 ## Surface Expectations
 
 - Menu-bar popover: compact quick switcher, fixed small size, recent sessions,
-  backup actions, quiet refresh indicator.
+  pinned sessions before non-pinned recents, backup actions, quiet refresh
+  indicator.
 - Dashboard: three-column `NavigationSplitView` with sessions, windows/panes,
   and pane detail. It should open onto a useful selection, not an empty shell.
+  Pinned sessions should get a compact SF Symbol marker rather than a bulky
+  badge.
 - Dashboard pane preview reloads on open, session/pane selection, and manual
   refresh. Do not attach pane preview capture to the auto-refresh loop; that
   becomes accidental streaming.
