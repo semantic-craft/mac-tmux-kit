@@ -34,6 +34,21 @@ protocol TmuxStateReading: Sendable {
 
 extension TmuxService: TmuxStateReading {}
 
+protocol TmuxPaneCapturing: Sendable {
+    func capturePane(paneId: String) async throws -> String
+}
+
+extension TmuxService: TmuxPaneCapturing {}
+
+struct PanePreview: Equatable, Sendable {
+    let content: String
+    let errorMessage: String?
+
+    var failed: Bool { errorMessage != nil }
+
+    static let empty = PanePreview(content: "", errorMessage: nil)
+}
+
 /// Top-level observable state shared by every UI surface (menu bar, palette,
 /// Dashboard). Owns the `TmuxService`, the session/window/pane data, and the
 /// mutating action methods (a single implementation reused by buttons, context
@@ -57,6 +72,7 @@ final class AppState {
 
     let service: TmuxService?
     @ObservationIgnored private let stateReader: (any TmuxStateReading)?
+    @ObservationIgnored private let paneCapturer: (any TmuxPaneCapturing)?
     let focusService = GhosttyFocusService()
     private var commandPalette: CommandPaletteController?
     private var dashboard: DashboardWindowController?
@@ -68,16 +84,19 @@ final class AppState {
     init(
         service: TmuxService? = nil,
         stateReader: (any TmuxStateReading)? = nil,
+        paneCapturer: (any TmuxPaneCapturing)? = nil,
         preloadTheme: Bool = true
     ) {
         if let stateReader {
             self.service = service
             self.stateReader = stateReader
+            self.paneCapturer = paneCapturer
         } else {
             let override = UserDefaults.standard.string(forKey: "tmuxBinaryPath")
             let located = service ?? TmuxBinaryLocator.locate(override: override).map { TmuxService(binary: $0) }
             self.service = located
             self.stateReader = located
+            self.paneCapturer = located
         }
         // Resolve the Ghostty-derived theme off the main thread so the first view
         // render never blocks on the `ghostty +show-config` subprocess.
@@ -182,6 +201,12 @@ final class AppState {
 
     func activePane(in session: TmuxSession) -> TmuxPane? {
         activePane(in: activeWindow(in: session))
+    }
+
+    func previewPane(in sessionId: String?) -> TmuxPane? {
+        guard let sessionId else { return nil }
+        let sessionPanes = panes.filter { $0.sessionId == sessionId }
+        return sessionPanes.first { $0.active } ?? sessionPanes.first
     }
 
     func paneCount(in session: TmuxSession) -> Int {
@@ -452,9 +477,17 @@ final class AppState {
 
     /// Capture a pane's visible content for the detail view.
     func capture(_ p: TmuxPane) async -> String {
-        guard let service else { return "" }
-        do { return try await service.capturePane(paneId: p.id) }
-        catch { return message(for: error) }
+        (await capturePreview(p)).content
+    }
+
+    func capturePreview(_ p: TmuxPane) async -> PanePreview {
+        guard let paneCapturer else {
+            return PanePreview(content: "", errorMessage: TmuxError.binaryNotFound.userMessage)
+        }
+        do {
+            return PanePreview(content: try await paneCapturer.capturePane(paneId: p.id), errorMessage: nil)
+        }
+        catch { return PanePreview(content: "", errorMessage: message(for: error)) }
     }
 
     private func message(for error: Error) -> String {
