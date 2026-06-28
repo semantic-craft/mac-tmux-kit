@@ -3,7 +3,7 @@
   "name": "pin-important-tmux-sessions",
   "title": "Pin important tmux sessions",
   "description": "Mirror GitHub issue #5: persistent pinned sessions.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

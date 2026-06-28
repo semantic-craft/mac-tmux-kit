@@ -31,9 +31,15 @@ Examples already in the app:
 - `tmuxBinaryPath` in `AppState.init()`.
 - `sessionClickAction` in `AppState.activateFromMenuBar(_:)`.
 - `resurrectRestoreProcesses` in `MenuBarPopoverView`.
+- `pinnedSessionNames` in `AppState`, stored as session names so recreated
+  project sessions can be prioritized again.
 
 Do not introduce a database, JSON store, or migration system for simple app
 preferences unless the project first gains a real persistence requirement.
+
+Pinned session names are preferences, not live tmux state. UI lists must still
+come from the current tmux session array, and tmux mutations must continue to
+target stable session IDs.
 
 ## Project Files
 

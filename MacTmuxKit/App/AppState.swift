@@ -17,6 +17,14 @@ enum SessionClickAction: String, CaseIterable {
     }
 }
 
+protocol UserDefaultsStoring: AnyObject {
+    func stringArray(forKey defaultName: String) -> [String]?
+    func set(_ value: Any?, forKey defaultName: String)
+    @discardableResult func synchronize() -> Bool
+}
+
+extension UserDefaults: UserDefaultsStoring {}
+
 /// A request to open the Dashboard focused on a specific session. The `token`
 /// makes each request unique, so clicking the same session again still triggers
 /// the Dashboard's selection update.
@@ -56,9 +64,12 @@ struct PanePreview: Equatable, Sendable {
 @MainActor
 @Observable
 final class AppState {
+    private static let pinnedSessionNamesKey = "pinnedSessionNames"
+
     private(set) var sessions: [TmuxSession] = []
     private(set) var windows: [TmuxWindow] = []
     private(set) var panes: [TmuxPane] = []
+    private(set) var pinnedSessionNames: Set<String>
     private(set) var statusMessage: String?
     private(set) var isLoading = false
     /// Server short host name, used to tell a default pane title from a user-set
@@ -73,6 +84,7 @@ final class AppState {
     let service: TmuxService?
     @ObservationIgnored private let stateReader: (any TmuxStateReading)?
     @ObservationIgnored private let paneCapturer: (any TmuxPaneCapturing)?
+    @ObservationIgnored private let defaults: any UserDefaultsStoring
     let focusService = GhosttyFocusService()
     private var commandPalette: CommandPaletteController?
     private var dashboard: DashboardWindowController?
@@ -85,8 +97,11 @@ final class AppState {
         service: TmuxService? = nil,
         stateReader: (any TmuxStateReading)? = nil,
         paneCapturer: (any TmuxPaneCapturing)? = nil,
+        defaults: any UserDefaultsStoring = UserDefaults.standard,
         preloadTheme: Bool = true
     ) {
+        self.defaults = defaults
+        self.pinnedSessionNames = Set(defaults.stringArray(forKey: Self.pinnedSessionNamesKey) ?? [])
         if let stateReader {
             self.service = service
             self.stateReader = stateReader
@@ -211,6 +226,36 @@ final class AppState {
 
     func paneCount(in session: TmuxSession) -> Int {
         panes.filter { $0.sessionId == session.id }.count
+    }
+
+    func isPinned(_ session: TmuxSession) -> Bool {
+        pinnedSessionNames.contains(session.name)
+    }
+
+    func pinnedFirstSessions(limit: Int? = nil) -> [TmuxSession] {
+        let ordered = sessions.sorted { lhs, rhs in
+            let lhsPinned = isPinned(lhs)
+            let rhsPinned = isPinned(rhs)
+            if lhsPinned != rhsPinned { return lhsPinned && !rhsPinned }
+            return lhs.activity > rhs.activity
+        }
+        guard let limit else { return ordered }
+        return Array(ordered.prefix(limit))
+    }
+
+    func togglePin(_ session: TmuxSession) {
+        isPinned(session) ? unpinSession(session) : pinSession(session)
+    }
+
+    func pinSession(_ session: TmuxSession) {
+        guard !session.name.isEmpty else { return }
+        pinnedSessionNames.insert(session.name)
+        persistPinnedSessionNames()
+    }
+
+    func unpinSession(_ session: TmuxSession) {
+        pinnedSessionNames.remove(session.name)
+        persistPinnedSessionNames()
     }
 
     func sessionDisplayPath(_ session: TmuxSession) -> String {
@@ -492,5 +537,10 @@ final class AppState {
 
     private func message(for error: Error) -> String {
         (error as? TmuxError)?.userMessage ?? error.localizedDescription
+    }
+
+    private func persistPinnedSessionNames() {
+        defaults.set(Array(pinnedSessionNames).sorted(), forKey: Self.pinnedSessionNamesKey)
+        defaults.synchronize()
     }
 }
