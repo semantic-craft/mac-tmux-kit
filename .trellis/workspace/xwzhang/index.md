@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 3
+- **Total Sessions**: 4
 - **Last Active**: 2026-06-29
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~105 | Active |
+| `journal-1.md` | ~138 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 4 | 2026-06-29 | Copy tmux debug snapshot | `9142ae6` | `codex/readable-tmux-dashboard` |
 | 3 | 2026-06-29 | Pin important tmux sessions | `ea850e0` | `codex/readable-tmux-dashboard` |
 | 2 | 2026-06-29 | Preview selected session pane | `1196178` | `codex/readable-tmux-dashboard` |
 | 1 | 2026-06-29 | Finish trustworthy refresh state | `65085e9` | `codex/readable-tmux-dashboard` |
