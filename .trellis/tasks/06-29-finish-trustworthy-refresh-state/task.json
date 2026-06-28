@@ -3,7 +3,7 @@
   "name": "finish-trustworthy-refresh-state",
   "title": "Finish trustworthy refresh state",
   "description": "Mirror GitHub issue #3: make session state visibly trustworthy.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

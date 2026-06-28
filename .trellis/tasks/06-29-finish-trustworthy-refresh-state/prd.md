@@ -21,16 +21,25 @@ When tmux changes while Tmux Kit is already running, the Dashboard and menu-bar 
 
 ## Acceptance Criteria
 
-- [ ] Creating a new tmux session while the app is running causes it to appear after a visible refresh path without app restart.
-- [ ] The menu-bar popover and Dashboard do not present stale state after being opened.
-- [ ] A refresh-in-progress indicator is visible where appropriate and does not hide existing sessions.
-- [ ] A true empty tmux server state reads as empty.
-- [ ] A tmux access failure reads as an error, not as "No tmux sessions."
-- [ ] Behavior tests cover refresh coalescing and empty/error state classification at the shared state seam.
-- [ ] Manual verification records the tmux session name and socket used for the smoke test.
+- [x] Creating a new tmux session while the app is running causes it to appear after a visible refresh path without app restart.
+- [x] The menu-bar popover and Dashboard do not present stale state after being opened.
+- [x] A refresh-in-progress indicator is visible where appropriate and does not hide existing sessions.
+- [x] A true empty tmux server state reads as empty.
+- [x] A tmux access failure reads as an error, not as "No tmux sessions."
+- [x] Behavior tests cover refresh coalescing and empty/error state classification at the shared state seam.
+- [x] Manual verification records the tmux session name and socket used for the smoke test.
 
 ## TDD Notes
 
 - Preferred seam: the shared app state tmux-state reader interface.
 - Tests should exercise observable state after `refresh()`, not timer internals or SwiftUI private layout.
 - Do not test the exact polling interval.
+
+## Verification
+
+- `swift test` in `Core/`: PASS, 17 tests.
+- `xcodebuild test -scheme MacTmuxKit -destination 'platform=macOS'`: PASS, 3 app tests. Xcode printed a CoreSimulator version warning, but macOS tests completed successfully.
+- `./scripts/build-app.sh`: PASS, installed and launched `/Applications/MacTmuxKit.app`.
+- Manual smoke session: `mac-tmux-kit-refresh-030750`.
+- Manual smoke socket: `/private/tmp/tmux-501/default`.
+- `tmux -S /private/tmp/tmux-501/default has-session -t mac-tmux-kit-refresh-030750`: PASS. Temporary smoke session was removed after verification.

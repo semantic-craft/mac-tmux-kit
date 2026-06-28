@@ -25,6 +25,15 @@ struct DashboardRequest: Equatable {
     let token = UUID()
 }
 
+protocol TmuxStateReading: Sendable {
+    func listSessions() async throws -> [TmuxSession]
+    func listAllWindows() async throws -> [TmuxWindow]
+    func listAllPanes() async throws -> [TmuxPane]
+    func hostShort() async throws -> String
+}
+
+extension TmuxService: TmuxStateReading {}
+
 /// Top-level observable state shared by every UI surface (menu bar, palette,
 /// Dashboard). Owns the `TmuxService`, the session/window/pane data, and the
 /// mutating action methods (a single implementation reused by buttons, context
@@ -47,6 +56,7 @@ final class AppState {
     private(set) var dashboardRequest: DashboardRequest?
 
     let service: TmuxService?
+    @ObservationIgnored private let stateReader: (any TmuxStateReading)?
     let focusService = GhosttyFocusService()
     private var commandPalette: CommandPaletteController?
     private var dashboard: DashboardWindowController?
@@ -55,15 +65,28 @@ final class AppState {
     private var autoRefreshTask: Task<Void, Never>?
     private var refreshAgain = false
 
-    init() {
-        let override = UserDefaults.standard.string(forKey: "tmuxBinaryPath")
-        service = TmuxBinaryLocator.locate(override: override).map { TmuxService(binary: $0) }
+    init(
+        service: TmuxService? = nil,
+        stateReader: (any TmuxStateReading)? = nil,
+        preloadTheme: Bool = true
+    ) {
+        if let stateReader {
+            self.service = service
+            self.stateReader = stateReader
+        } else {
+            let override = UserDefaults.standard.string(forKey: "tmuxBinaryPath")
+            let located = service ?? TmuxBinaryLocator.locate(override: override).map { TmuxService(binary: $0) }
+            self.service = located
+            self.stateReader = located
+        }
         // Resolve the Ghostty-derived theme off the main thread so the first view
         // render never blocks on the `ghostty +show-config` subprocess.
-        Task.detached(priority: .utility) { _ = Theme.ghostty }
+        if preloadTheme {
+            Task.detached(priority: .utility) { _ = Theme.ghostty }
+        }
     }
 
-    var tmuxAvailable: Bool { service != nil }
+    var tmuxAvailable: Bool { stateReader != nil }
     var hasAXPermission: Bool { focusService.hasPermission }
 
     // MARK: - Command palette / hotkeys
@@ -194,7 +217,7 @@ final class AppState {
 
     /// Reload sessions + windows + panes in parallel. Sessions sort most-active first.
     func refresh() async {
-        guard let service else {
+        guard let stateReader else {
             statusMessage = TmuxError.binaryNotFound.userMessage
             return
         }
@@ -203,18 +226,11 @@ final class AppState {
             return
         }
         isLoading = true
-        defer {
-            isLoading = false
-            if refreshAgain {
-                refreshAgain = false
-                Task { [weak self] in await self?.refresh() }
-            }
-        }
         do {
-            async let s = service.listSessions()
-            async let w = service.listAllWindows()
-            async let p = service.listAllPanes()
-            async let h = service.hostShort()
+            async let s = stateReader.listSessions()
+            async let w = stateReader.listAllWindows()
+            async let p = stateReader.listAllPanes()
+            async let h = stateReader.hostShort()
             let (ss, ww, pp, hh) = try await (s, w, p, h)
             sessions = ss.sorted { $0.activity > $1.activity }
             windows = ww
@@ -223,6 +239,11 @@ final class AppState {
             statusMessage = sessions.isEmpty ? "No tmux sessions." : nil
         } catch {
             statusMessage = message(for: error)
+        }
+        isLoading = false
+        if refreshAgain {
+            refreshAgain = false
+            await refresh()
         }
     }
 
