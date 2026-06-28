@@ -1,39 +1,30 @@
-# Frontend Development Guidelines
+# SwiftUI and AppKit UI Guidelines
 
-> Best practices for frontend development in this project.
+In this repository, Trellis' `frontend` spec means the native macOS UI:
+SwiftUI views, AppKit window/status-item controllers, settings, command
+palette, console, cheatsheet, Dashboard, and menu-bar popover.
 
----
+This is not a web frontend. There is no React, DOM, CSS, Tailwind, browser
+router, or TypeScript layer.
 
-## Overview
+## Guides
 
-This directory contains guidelines for frontend development. Fill in each file with your project's specific conventions.
+| Guide | Applies to | Status |
+| --- | --- | --- |
+| [Directory Structure](./directory-structure.md) | `MacTmuxKit/Features/`, `MacTmuxKit/Design/`, `MacTmuxKit/Shared/` | Project-specific |
+| [Component Guidelines](./component-guidelines.md) | SwiftUI view composition, rows, buttons, empty/loading/error states | Project-specific |
+| [SwiftUI Lifecycle Guidelines](./hook-guidelines.md) | `.task`, `.onChange`, `@State`, `@AppStorage`, environment state | Project-specific |
+| [State Management](./state-management.md) | `AppState`, local view state, Dashboard selection requests | Project-specific |
+| [Type Safety](./type-safety.md) | Swift models, stable tmux IDs, parser contracts, optional handling | Project-specific |
+| [Quality Guidelines](./quality-guidelines.md) | macOS design, accessibility, motion, visual verification | Project-specific |
 
----
+## UI Source of Truth
 
-## Guidelines Index
+- `DESIGN.md` defines native macOS design rules.
+- `DESIGN-CHECKLIST.md` is the review checklist for surfaces.
+- `MacTmuxKit/Design/DesignTokens.swift` is the single source of truth for
+  color, type, radius, and terminal preview colors.
+- `.claude/skills/swiftui-taste/SKILL.md` is the project-specific design skill
+  distilled for SwiftUI/AppKit work.
 
-| Guide | Description | Status |
-|-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition | To fill |
-| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | To fill |
-| [State Management](./state-management.md) | Local state, global state, server state | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Type Safety](./type-safety.md) | Type patterns, validation | To fill |
-
----
-
-## How to Fill These Guidelines
-
-For each guideline file:
-
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
-
-The goal is to help AI assistants and new team members understand how YOUR project works.
-
----
-
-**Language**: All documentation should be written in **English**.
+Native macOS conventions win over generic web taste advice.

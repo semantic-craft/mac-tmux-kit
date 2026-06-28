@@ -1,51 +1,44 @@
-# Logging Guidelines
+# Logging and Debug Output
 
-> How logging is done in this project.
+Tmux Kit does not currently have a persistent logging subsystem. The app is a
+local control surface, so most operational feedback belongs in the UI as status
+text, progress indicators, or short toasts.
 
----
+## Current Feedback Channels
 
-## Overview
+- `AppState.statusMessage` for current refresh or availability state.
+- `ToastView` via `AppState.showToast` for action success/failure feedback.
+- Inline `ProgressView` for routine loading states.
+- Shell command output only in explicit utility surfaces such as the tmux
+  console.
 
-<!--
-Document your project's logging conventions here.
+Reference files:
 
-Questions to answer:
-- What logging library do you use?
-- What are the log levels and when to use each?
-- What should be logged?
-- What should NOT be logged (PII, secrets)?
--->
+- `MacTmuxKit/App/AppState.swift`
+- `MacTmuxKit/Shared/ToastView.swift`
+- `MacTmuxKit/Features/Console/ConsoleWindowController.swift`
+- `MacTmuxKit/Features/MenuBar/MenuBarPopoverView.swift`
 
-(To be filled by the team)
+## Debug Snapshots
 
----
+Future debug snapshot work should be explicit and copyable, not always-on
+logging. It should collect enough local state to explain refresh problems:
+tmux binary path, resolved socket, command exit statuses, parsed session counts,
+and app status text.
 
-## Log Levels
+Never include by default:
 
-<!-- When to use each level: debug, info, warn, error -->
+- full environment variables;
+- API keys, tokens, or secrets;
+- large pane content;
+- private paths beyond what the user deliberately copies.
 
-(To be filled by the team)
+Pane content is user work. Only capture it for UI preview or explicit copy
+actions the user invokes.
 
----
+## Anti-patterns
 
-## Structured Logging
-
-<!-- Log format, required fields -->
-
-(To be filled by the team)
-
----
-
-## What to Log
-
-<!-- Important events to log -->
-
-(To be filled by the team)
-
----
-
-## What NOT to Log
-
-<!-- Sensitive data, PII, secrets -->
-
-(To be filled by the team)
+- Do not add background telemetry or network diagnostics.
+- Do not print noisy logs from every 3-second refresh cycle.
+- Do not rely on `print` statements as the main debugging tool for user-facing
+  bugs; expose a copyable snapshot when the feature exists.
