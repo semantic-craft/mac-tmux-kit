@@ -1,51 +1,66 @@
-# Quality Guidelines
+# UI Quality Guidelines
 
-> Code quality standards for frontend development.
+UI changes should preserve the app's native macOS feel and the user's trust
+that the tmux state on screen is current.
 
----
+## Native macOS First
 
-## Overview
+Follow `DESIGN.md`: native conventions beat generic web design advice.
 
-<!--
-Document your project's quality standards here.
+- system San Francisco font;
+- semantic text colors (`.primary`, `.secondary`);
+- system materials for chrome when useful;
+- compact 13px body / 11px metadata rhythm;
+- SF Symbols;
+- keyboard-first interactions and `.help()` on icon controls.
 
-Questions to answer:
-- What patterns are forbidden?
-- What linting rules do you enforce?
-- What are your testing requirements?
-- What code review standards apply?
--->
+Use `MacTmuxKit/Design/DesignTokens.swift` for app-specific colors, type roles,
+radii, and terminal canvas colors.
 
-(To be filled by the team)
+## Surface Expectations
 
----
+- Menu-bar popover: compact quick switcher, fixed small size, recent sessions,
+  backup actions, quiet refresh indicator.
+- Dashboard: three-column `NavigationSplitView` with sessions, windows/panes,
+  and pane detail. It should open onto a useful selection, not an empty shell.
+- Command palette and console: focused utility windows, keyboard-friendly, no
+  visual bulk.
+- Settings: grouped native forms.
 
-## Forbidden Patterns
+## Accessibility and Motion
 
-<!-- Patterns that should never be used and why -->
+- Gate animations with `accessibilityReduceMotion`.
+- Use native lists/buttons where they provide keyboard navigation for free.
+- Icon-only controls need `.help(...)`.
+- Keep destructive actions visually distinct and confirmation-gated.
 
-(To be filled by the team)
+## Text and Visual Restraint
 
----
+- No emoji in UI text.
+- No em dashes in UI strings.
+- No decorative gradients, ambient blobs, or second accent hue.
+- Status colors signal real state only.
+- Loading, empty, and error states must be distinguishable.
 
-## Required Patterns
+## Verification
 
-<!-- Patterns that must always be used -->
+For UI-only source changes, run the app build path:
 
-(To be filled by the team)
+```sh
+./scripts/run.sh
+```
 
----
+For installed-app behavior, run:
 
-## Testing Requirements
+```sh
+./scripts/build-app.sh
+```
 
-<!-- What level of testing is expected -->
+When a change affects parser/domain behavior, also run:
 
-(To be filled by the team)
+```sh
+cd Core && swift test
+```
 
----
-
-## Code Review Checklist
-
-<!-- What reviewers should check -->
-
-(To be filled by the team)
+When a UI issue was reported from a screenshot or real app state, verify the
+actual surface rather than relying only on code inspection.

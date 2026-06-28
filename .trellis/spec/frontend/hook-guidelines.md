@@ -1,51 +1,75 @@
-# Hook Guidelines
+# SwiftUI Lifecycle Guidelines
 
-> How hooks are used in this project.
+This file replaces the template "hook" concept with SwiftUI lifecycle and state
+rules. There are no React hooks in this project.
 
----
+## Environment State
 
-## Overview
+Views read shared app state with `@Environment(AppState.self)`.
 
-<!--
-Document your project's hook conventions here.
+```swift
+// MacTmuxKit/Features/MenuBar/MenuBarPopoverView.swift
+@Environment(AppState.self) private var app
+```
 
-Questions to answer:
-- What custom hooks do you have?
-- How do you handle data fetching?
-- What are the naming conventions?
-- How do you share stateful logic?
--->
+Trigger app actions from event handlers or lifecycle modifiers, not from view
+body evaluation.
 
-(To be filled by the team)
+## Async Work
 
----
+Use `.task` when a surface should refresh or initialize on appearance:
 
-## Custom Hook Patterns
+```swift
+// MacTmuxKit/Features/Dashboard/DashboardView.swift
+.task {
+    await app.refresh()
+    applySelection()
+}
+```
 
-<!-- How to create and structure custom hooks -->
+Use `Task { ... }` inside button actions when invoking async app methods:
 
-(To be filled by the team)
+```swift
+IconButton(systemName: "arrow.clockwise", help: "Refresh") {
+    Task { await app.refresh() }
+}
+```
 
----
+Do not start long-running subprocesses from a computed property or a view
+builder branch.
 
-## Data Fetching
+## Local State
 
-<!-- How data fetching is handled (React Query, SWR, etc.) -->
+Use `@State` for transient view-local UI state: selected IDs, hover state,
+inline editing text, confirm dialogs, and local progress flags.
 
-(To be filled by the team)
+Examples:
 
----
+- `DashboardView.selectedSessionId`
+- `DashboardView.selectedPaneId`
+- `MenuBarPopoverView.confirmRestore`
+- inline rename state in Dashboard row views
 
-## Naming Conventions
+Use `@AppStorage` only for simple user preferences that map to `UserDefaults`.
 
-<!-- Hook naming rules (use*, etc.) -->
+## Change Handling
 
-(To be filled by the team)
+Use `.onChange` to react to a specific observable value, as Dashboard does for
+`dashboardRequest` and selection changes.
 
----
+Keep these handlers small. If a change needs tmux I/O or shared mutation, move
+the work to `AppState` and call it from the handler.
 
-## Common Mistakes
+## Motion
 
-<!-- Hook-related mistakes your team has made -->
+Gate animations on `accessibilityReduceMotion`.
 
-(To be filled by the team)
+```swift
+// MacTmuxKit/Features/Dashboard/DashboardView.swift
+@Environment(\.accessibilityReduceMotion) private var reduceMotion
+...
+.animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: app.toast)
+```
+
+Avoid infinite ambient animations and visual motion that does not communicate a
+state change.

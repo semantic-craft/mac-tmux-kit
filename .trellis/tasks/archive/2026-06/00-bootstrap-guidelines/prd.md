@@ -21,9 +21,16 @@ the rest conversationally.
 
 ## Status (update the checkboxes as you complete each item)
 
-- [ ] Fill backend guidelines
-- [ ] Fill frontend guidelines
-- [ ] Add code examples
+- [x] Fill backend guidelines
+- [x] Fill frontend guidelines
+- [x] Add code examples
+
+Completion notes:
+
+- Backend specs now describe the actual Core/service side of this SwiftUI tmux app: `Core/`, `MacTmuxKit/Services/`, `AppState`, `project.yml`, and build scripts.
+- Frontend specs now describe the actual SwiftUI/AppKit UI side: feature surfaces, `Theme` tokens, `AppState`, lifecycle modifiers, type boundaries, and native macOS quality rules.
+- Code examples were copied or condensed from real project files such as `TmuxService.swift`, `ProcessRunner.swift`, `TmuxFormat.swift`, `DashboardView.swift`, `MenuBarPopoverView.swift`, and `DesignTokens.swift`.
+- Template web concepts that do not apply were explicitly re-scoped: no database, no API backend, no React hooks, no TypeScript layer.
 
 ---
 
@@ -34,23 +41,23 @@ the rest conversationally.
 
 | File | What to document |
 |------|------------------|
-| `.trellis/spec/backend/directory-structure.md` | Where different file types go (routes, services, utils) |
-| `.trellis/spec/backend/database-guidelines.md` | ORM, migrations, query patterns, naming conventions |
-| `.trellis/spec/backend/error-handling.md` | How errors are caught, logged, and returned |
-| `.trellis/spec/backend/logging-guidelines.md` | Log levels, format, what to log |
-| `.trellis/spec/backend/quality-guidelines.md` | Code review standards, testing requirements |
+| `.trellis/spec/backend/directory-structure.md` | Core package, service adapters, app orchestration, build scripts |
+| `.trellis/spec/backend/database-guidelines.md` | External state boundaries: tmux server, UserDefaults, generated files, local config |
+| `.trellis/spec/backend/error-handling.md` | `TmuxError`, `ProcessRunnerError`, status messages, toasts |
+| `.trellis/spec/backend/logging-guidelines.md` | UI feedback, debug snapshot boundaries, sensitive output rules |
+| `.trellis/spec/backend/quality-guidelines.md` | tmux invocation safety, stable IDs, parser contract, verification commands |
 
 
 ### Frontend guidelines
 
 | File | What to document |
 |------|------------------|
-| `.trellis/spec/frontend/directory-structure.md` | Component/page/hook organization |
-| `.trellis/spec/frontend/component-guidelines.md` | Component patterns, props conventions |
-| `.trellis/spec/frontend/hook-guidelines.md` | Custom hook naming, patterns |
-| `.trellis/spec/frontend/state-management.md` | State library, patterns, what goes where |
-| `.trellis/spec/frontend/type-safety.md` | TypeScript conventions, type organization |
-| `.trellis/spec/frontend/quality-guidelines.md` | Linting, testing, accessibility |
+| `.trellis/spec/frontend/directory-structure.md` | SwiftUI/AppKit feature surfaces and shared UI placement |
+| `.trellis/spec/frontend/component-guidelines.md` | SwiftUI row/button/state patterns, Theme tokens, copy and icons |
+| `.trellis/spec/frontend/hook-guidelines.md` | SwiftUI lifecycle modifiers, async tasks, local state, motion |
+| `.trellis/spec/frontend/state-management.md` | `AppState`, derived view state, refresh model, action ownership |
+| `.trellis/spec/frontend/type-safety.md` | Swift models, tmux stable IDs, optionals, parser type boundaries |
+| `.trellis/spec/frontend/quality-guidelines.md` | Native macOS design, accessibility, motion, verification |
 
 
 ### Thinking guides (already populated)
@@ -118,7 +125,7 @@ is a separate conversation, not a bootstrap concern.
 ## Completion
 
 When the developer confirms the checklist items above are done with real
-examples (not placeholders), guide them to run:
+project examples, guide them to run:
 
 ```bash
 python3 ./.trellis/scripts/task.py finish
