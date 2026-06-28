@@ -103,3 +103,36 @@ Implemented persistent pinned tmux sessions by name: shared AppState pin state b
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: Copy tmux debug snapshot
+
+**Date**: 2026-06-29
+**Task**: Copy tmux debug snapshot
+**Branch**: `codex/readable-tmux-dashboard`
+
+### Summary
+
+Implemented copyable tmux debug snapshots from the menu-bar popover: AppState read-only snapshot text with binary/socket/status/counts/session summaries/read failures, clipboard copy with feedback, app tests for metadata and failures, real menu-bar copy smoke with taiwan/develop sessions, and Trellis logging/UI spec updates.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9142ae6` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
