@@ -1,51 +1,60 @@
-# Database Guidelines
+# External State and Persistence
 
-> Database patterns and conventions for this project.
+This project has no database. Treat this file as the guide for the external
+state Tmux Kit is allowed to read or write.
 
----
+## tmux Server State
 
-## Overview
+The tmux server is the main external state. Read it through `TmuxService`, not
+from views or ad hoc shell scripts.
 
-<!--
-Document your project's database conventions here.
+Important local rules:
 
-Questions to answer:
-- What ORM/query library do you use?
-- How are migrations managed?
-- What are the naming conventions for tables/columns?
-- How do you handle transactions?
--->
+- Resolve the tmux socket explicitly and pass `-S <socket>` on every call.
+- Prefer stable tmux IDs (`$N`, `@N`, `%N`) for mutation targets.
+- Use names only for display, creation text, or tmux APIs that explicitly
+  return names.
+- A missing tmux server is a valid empty state for read paths.
 
-(To be filled by the team)
+Reference files:
 
----
+- `MacTmuxKit/Services/Tmux/TmuxService.swift`
+- `MacTmuxKit/Services/Tmux/TmuxService+Sessions.swift`
+- `MacTmuxKit/Services/Tmux/TmuxService+Windows.swift`
+- `MacTmuxKit/Services/Tmux/TmuxService+Panes.swift`
 
-## Query Patterns
+## User Preferences
 
-<!-- How should queries be written? Batch operations? -->
+Small UI and runtime preferences live in `UserDefaults` / `@AppStorage`.
+Examples already in the app:
 
-(To be filled by the team)
+- `tmuxBinaryPath` in `AppState.init()`.
+- `sessionClickAction` in `AppState.activateFromMenuBar(_:)`.
+- `resurrectRestoreProcesses` in `MenuBarPopoverView`.
 
----
+Do not introduce a database, JSON store, or migration system for simple app
+preferences unless the project first gains a real persistence requirement.
 
-## Migrations
+## Project Files
 
-<!-- How to create and run migrations -->
+`project.yml` is the source of truth for the app target and dependencies. The
+generated `.xcodeproj` is ignored and should not be treated as durable state.
 
-(To be filled by the team)
+## Local Config Boundaries
 
----
+Tmux Kit reads local tools but does not silently modify user configuration.
 
-## Naming Conventions
+Allowed current behavior:
 
-<!-- Table names, column names, index names -->
+- run the user's local `tmux` executable;
+- read Ghostty theme configuration at launch;
+- use Accessibility when the user grants permission;
+- save/restore layouts through tmux-resurrect only when the user invokes that
+  action.
 
-(To be filled by the team)
+Forbidden patterns:
 
----
-
-## Common Mistakes
-
-<!-- Database-related mistakes your team has made -->
-
-(To be filled by the team)
+- automatic edits to `~/.tmux.conf`;
+- automatic plugin installation;
+- telemetry, accounts, or remote network calls;
+- logging pane content or environment variables as persistent app state.

@@ -1,54 +1,58 @@
-# Directory Structure
+# UI Directory Structure
 
-> How frontend code is organized in this project.
+Keep UI work organized by surface. Each feature owns its views and AppKit
+window/controller glue.
 
----
+## Feature Surfaces
 
-## Overview
+`MacTmuxKit/Features/` contains user-facing surfaces:
 
-<!--
-Document your project's frontend directory structure here.
+- `MenuBar/` for the status item popover quick switcher.
+- `Dashboard/` for the three-column session/window/pane browser.
+- `CommandPalette/` for fuzzy switch and command entry.
+- `Console/` for explicit tmux command execution.
+- `Cheatsheet/` for discoverable tmux shortcuts.
+- `Settings/` for app preferences and hotkey configuration.
 
-Questions to answer:
-- Where do components live?
-- How are features/modules organized?
-- Where are shared utilities?
-- How are assets organized?
--->
+Use the existing surface directory before creating a new shared abstraction.
+For example, Dashboard-specific row views should live under `Features/Dashboard`
+unless they are reused by another surface.
 
-(To be filled by the team)
+## Shared UI
 
----
+Use `MacTmuxKit/Shared/` for genuinely shared SwiftUI pieces such as icon
+buttons, empty states, or toasts. Shared components should stay small and
+theme-driven.
 
-## Directory Layout
+Use `MacTmuxKit/Design/` for design tokens and theme resolution. Do not place
+per-feature layout code there.
 
+## AppKit Controllers
+
+AppKit glue belongs next to the surface it opens:
+
+- `DashboardWindowController` in `Features/Dashboard/`
+- command palette controller in `Features/CommandPalette/`
+- console controller in `Features/Console/`
+- cheatsheet controller in `Features/Cheatsheet/`
+
+The controller should open, focus, and size the window. Feature behavior should
+stay in SwiftUI views and `AppState` actions.
+
+## Composition Pattern
+
+The local Dashboard pattern is a thin surface view composed from columns:
+
+```swift
+// MacTmuxKit/Features/Dashboard/DashboardView.swift
+NavigationSplitView {
+    SessionSidebar(selectedSessionId: $selectedSessionId)
+} content: {
+    WindowPaneColumn(sessionId: selectedSessionId, selectedPaneId: $selectedPaneId)
+} detail: {
+    PaneDetailColumn(paneId: selectedPaneId)
+}
 ```
-<!-- Replace with your actual structure -->
-src/
-├── ...
-└── ...
-```
 
----
-
-## Module Organization
-
-<!-- How should new features be organized? -->
-
-(To be filled by the team)
-
----
-
-## Naming Conventions
-
-<!-- File and folder naming rules -->
-
-(To be filled by the team)
-
----
-
-## Examples
-
-<!-- Link to well-organized modules as examples -->
-
-(To be filled by the team)
+Avoid large multi-purpose views that mix window setup, tmux actions, parser
+logic, and visual rows in one file.

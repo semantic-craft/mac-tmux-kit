@@ -1,51 +1,61 @@
 # Type Safety
 
-> Type safety patterns in this project.
+Use Swift types and stable tmux identities to keep UI behavior trustworthy.
 
----
+## Domain Models
 
-## Overview
+Use the models from `Core/Sources/TmuxKitCore/` throughout the app:
 
-<!--
-Document your project's type safety conventions here.
+- `TmuxSession`
+- `TmuxWindow`
+- `TmuxPane`
+- `TmuxClient`
+- `TmuxTree`
 
-Questions to answer:
-- What type system do you use?
-- How are types organized?
-- What validation library do you use?
-- How do you handle type inference?
--->
+Do not pass dictionaries or raw parsed arrays into views when a typed model
+already exists.
 
-(To be filled by the team)
+## Stable Targets
 
----
+Prefer stable IDs for tmux actions and selection state:
 
-## Type Organization
+- `session.id` (`$N`)
+- `window.id` (`@N`) or a target string built by the model when tmux requires it
+- `pane.id` (`%N`)
 
-<!-- Where types are defined, shared types vs local types -->
+Names are not stable. A session called "taiwan" can be renamed; its ID remains
+the trustworthy target.
 
-(To be filled by the team)
+## Optionals
 
----
+Treat missing selections as normal. Dashboard columns often start with nil
+selected IDs and then choose the active/first pane.
 
-## Validation
+```swift
+// MacTmuxKit/Features/Dashboard/DashboardView.swift
+private func defaultPaneId(for sessionId: String?) -> String? {
+    guard let sessionId else { return nil }
+    let panes = app.panes.filter { $0.sessionId == sessionId }
+    return (panes.first(where: \.active) ?? panes.first)?.id
+}
+```
 
-<!-- Runtime validation patterns (Zod, Yup, io-ts, etc.) -->
+Avoid force unwraps at UI and tmux boundaries. A pane, window, or session can
+disappear between refreshes.
 
-(To be filled by the team)
+## Parser Safety
 
----
+Parser changes belong in Core and should preserve malformed-record tolerance:
+skip records with too few fields instead of crashing.
 
-## Common Patterns
+Reference tests:
 
-<!-- Type utilities, generics, type guards -->
+- `Core/Tests/TmuxKitCoreTests/TmuxParserTests.swift`
+- `Core/Tests/TmuxKitCoreTests/TmuxTreeTests.swift`
+- `Core/Tests/TmuxKitCoreTests/PaneNamingTests.swift`
 
-(To be filled by the team)
+## Type Boundaries
 
----
-
-## Forbidden Patterns
-
-<!-- any, type assertions, etc. -->
-
-(To be filled by the team)
+Keep AppKit/SwiftUI types out of Core. Keep subprocess and Accessibility types
+inside service/app layers. UI feature views should work with typed app state
+and action methods rather than raw CLI outputs.

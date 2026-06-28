@@ -1,38 +1,40 @@
-# Backend Development Guidelines
+# Core and Service Guidelines
 
-> Best practices for backend development in this project.
+In this repository, Trellis' `backend` spec means the non-UI side of Tmux
+Kit: the pure `Core/` Swift package, tmux and Ghostty service adapters,
+process execution, app orchestration helpers, and build scripts.
 
----
+This is not a web backend. There is no API server, database, ORM, migrations,
+network service, account system, or telemetry layer.
 
-## Overview
+## Guides
 
-This directory contains guidelines for backend development. Fill in each file with your project's specific conventions.
+| Guide | Applies to | Status |
+| --- | --- | --- |
+| [Directory Structure](./directory-structure.md) | `Core/`, `MacTmuxKit/Services/`, `MacTmuxKit/App/`, `scripts/`, `project.yml` | Project-specific |
+| [External State and Persistence](./database-guidelines.md) | tmux server state, user defaults, generated project files, local config boundaries | Project-specific |
+| [Error Handling](./error-handling.md) | `TmuxError`, `ProcessRunnerError`, UI-facing status messages | Project-specific |
+| [Quality Guidelines](./quality-guidelines.md) | tmux CLI safety, parsing, IDs, tests, build verification | Project-specific |
+| [Logging and Debug Output](./logging-guidelines.md) | status text, toasts, debug snapshots, sensitive output boundaries | Project-specific |
 
----
+## Architecture Summary
 
-## Guidelines Index
+Tmux Kit is a local-only native macOS app layered as:
 
-| Guide | Description | Status |
-|-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | To fill |
-| [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |
+```text
+SwiftUI/AppKit UI
+AppState actions and state
+Services: Tmux, Ghostty, hotkeys
+Core domain models, parser, tree helpers
+local tmux and Ghostty processes
+```
 
----
+Reference files:
 
-## How to Fill These Guidelines
-
-For each guideline file:
-
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
-
-The goal is to help AI assistants and new team members understand how YOUR project works.
-
----
-
-**Language**: All documentation should be written in **English**.
+- `README.md` documents the product boundary: local-only, no telemetry, no
+  edits to `~/.tmux.conf`, and no tmux plugin installation.
+- `project.yml` is the source of truth for the Xcode project. The generated
+  `.xcodeproj` is not committed.
+- `Core/Package.swift` defines the pure Swift package used for headless tests.
+- `MacTmuxKit/Services/Tmux/TmuxService.swift` is the high-level tmux adapter.
+- `MacTmuxKit/App/AppState.swift` owns shared app state and mutating actions.
