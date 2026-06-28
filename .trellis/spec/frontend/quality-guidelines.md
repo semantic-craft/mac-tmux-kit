@@ -21,7 +21,8 @@ radii, and terminal canvas colors.
 
 - Menu-bar popover: compact quick switcher, fixed small size, recent sessions,
   pinned sessions before non-pinned recents, backup actions, quiet refresh
-  indicator.
+  indicator, and an explicit copy debug snapshot action for pasteable support
+  evidence.
 - Dashboard: three-column `NavigationSplitView` with sessions, windows/panes,
   and pane detail. It should open onto a useful selection, not an empty shell.
   Pinned sessions should get a compact SF Symbol marker rather than a bulky

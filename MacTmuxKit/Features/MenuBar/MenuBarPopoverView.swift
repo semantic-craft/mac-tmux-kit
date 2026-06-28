@@ -9,6 +9,7 @@ struct MenuBarPopoverView: View {
     @AppStorage("resurrectRestoreProcesses") private var restoreProcesses = true
     @State private var backupStatus = ""
     @State private var backupWorking = false
+    @State private var snapshotStatus = ""
     @State private var confirmRestore = false
 
     private let visibleSessionLimit = 3
@@ -202,6 +203,17 @@ struct MenuBarPopoverView: View {
             }
             MenuItemRow(systemName: "rectangle.3.group", title: "Open Dashboard", subtitle: "", accessory: .chevron) {
                 app.showDashboard()
+            }
+            MenuItemRow(
+                systemName: "doc.on.doc",
+                title: "Copy Debug Snapshot",
+                subtitle: snapshotStatus,
+                accessory: snapshotStatus == "Copying..." ? .progress : .none
+            ) {
+                snapshotStatus = "Copying..."
+                Task {
+                    snapshotStatus = await app.copyDebugSnapshot() ? "Copied" : "Copy failed"
+                }
             }
             MenuItemRow(systemName: "command", title: "Command Palette", subtitle: "", accessory: .chevron) {
                 app.showCommandPalette()

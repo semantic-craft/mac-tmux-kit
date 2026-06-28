@@ -520,6 +520,70 @@ final class AppState {
         return result
     }
 
+    // MARK: - Debug snapshot
+
+    func debugSnapshot() async -> String {
+        var liveSessions: [TmuxSession] = []
+        var liveWindows: [TmuxWindow] = []
+        var livePanes: [TmuxPane] = []
+        var liveHost = ""
+        var failures: [String] = []
+
+        if let stateReader {
+            do { liveSessions = try await stateReader.listSessions() }
+            catch { failures.append("listSessions: \(message(for: error))") }
+            do { liveWindows = try await stateReader.listAllWindows() }
+            catch { failures.append("listAllWindows: \(message(for: error))") }
+            do { livePanes = try await stateReader.listAllPanes() }
+            catch { failures.append("listAllPanes: \(message(for: error))") }
+            do { liveHost = try await stateReader.hostShort() }
+            catch { failures.append("hostShort: \(message(for: error))") }
+        } else {
+            failures.append("tmux: \(TmuxError.binaryNotFound.userMessage)")
+        }
+
+        var lines: [String] = [
+            "Tmux Kit Debug Snapshot",
+            "generated: \(ISO8601DateFormatter().string(from: Date()))",
+            "",
+            "tmux",
+            "  binary: \(service?.binary.path ?? "not found")",
+            "  socket: \(service?.socket ?? TmuxService.resolveSocket())",
+            "",
+            "app state",
+            "  tmux available: \(tmuxAvailable)",
+            "  loading: \(isLoading)",
+            "  last status: \(statusMessage.map(debugSingleLine) ?? "OK")",
+            "  counts: sessions=\(sessions.count) windows=\(windows.count) panes=\(panes.count)",
+            "",
+            "fresh tmux read",
+            "  host: \(liveHost.isEmpty ? "unknown" : debugSingleLine(liveHost))",
+            "  counts: sessions=\(liveSessions.count) windows=\(liveWindows.count) panes=\(livePanes.count)",
+        ]
+
+        lines.append("  failures: \(failures.isEmpty ? "none" : "")")
+        lines += failures.map { "    - \(debugSingleLine($0))" }
+        lines.append("")
+        lines.append("sessions")
+        lines += debugSessionLines(sessions: liveSessions, windows: liveWindows, panes: livePanes)
+        return lines.joined(separator: "\n")
+    }
+
+    @discardableResult
+    func copyDebugSnapshot() async -> Bool {
+        let snapshot = await debugSnapshot()
+        NSPasteboard.general.clearContents()
+        let copied = NSPasteboard.general.setString(snapshot, forType: .string)
+        if copied {
+            showToast("Copied debug snapshot", kind: .success)
+        } else {
+            let text = "Could not copy debug snapshot."
+            statusMessage = text
+            showToast(text, kind: .failure)
+        }
+        return copied
+    }
+
     /// Capture a pane's visible content for the detail view.
     func capture(_ p: TmuxPane) async -> String {
         (await capturePreview(p)).content
@@ -542,5 +606,44 @@ final class AppState {
     private func persistPinnedSessionNames() {
         defaults.set(Array(pinnedSessionNames).sorted(), forKey: Self.pinnedSessionNamesKey)
         defaults.synchronize()
+    }
+
+    private func debugSessionLines(
+        sessions: [TmuxSession],
+        windows: [TmuxWindow],
+        panes: [TmuxPane]
+    ) -> [String] {
+        guard !sessions.isEmpty else { return ["  none"] }
+        let windowsBySession = Dictionary(grouping: windows, by: \.sessionId)
+        let panesByWindow = Dictionary(grouping: panes, by: \.windowId)
+
+        return sessions.flatMap { session -> [String] in
+            let sessionWindows = (windowsBySession[session.id] ?? []).sorted { $0.index < $1.index }
+            var lines = [
+                "  \(session.id) \(debugQuoted(session.name)) attached=\(session.attached) windows=\(session.windowCount)",
+            ]
+            if sessionWindows.isEmpty {
+                lines.append("    windows: none")
+            } else {
+                for window in sessionWindows {
+                    let windowPanes = (panesByWindow[window.id] ?? []).sorted { $0.index < $1.index }
+                    lines.append("    \(window.id) index=\(window.index) active=\(window.active) name=\(debugQuoted(window.name)) panes=\(window.paneCount)")
+                    for pane in windowPanes {
+                        lines.append("      \(pane.id) index=\(pane.index) active=\(pane.active) command=\(debugQuoted(pane.command)) size=\(pane.width)x\(pane.height)")
+                    }
+                }
+            }
+            return lines
+        }
+    }
+
+    private func debugQuoted(_ value: String) -> String {
+        "\"\(debugSingleLine(value).replacingOccurrences(of: "\"", with: "\\\""))\""
+    }
+
+    private func debugSingleLine(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r")
     }
 }
