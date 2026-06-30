@@ -112,23 +112,11 @@ struct MenuBarPopoverView: View {
                     pinned: app.isPinned(session),
                     subtitle: popoverSubtitle(session, window),
                     counts: "\(session.windowCount)w · \(app.paneCount(in: session))p",
-                    detach: session.attached ? { Task { await app.detachSession(session) } } : nil
+                    detach: session.attached ? { Task { await app.detachSession(session) } } : nil,
+                    onTogglePin: { app.togglePin(session) },
+                    onRename: { promptRename(session) },
+                    onKill: { confirmKill(session) }
                 ) { Task { await app.activateFromMenuBar(session) } }
-                .contextMenu {
-                    Button {
-                        app.togglePin(session)
-                    } label: {
-                        Label(app.isPinned(session) ? "Unpin" : "Pin",
-                              systemImage: app.isPinned(session) ? "pin.slash" : "pin")
-                    }
-                    Button { promptRename(session) } label: {
-                        Label("Rename…", systemImage: "pencil")
-                    }
-                    Divider()
-                    Button(role: .destructive) { confirmKill(session) } label: {
-                        Label("Kill Session", systemImage: "trash")
-                    }
-                }
             }
             Divider().padding(.horizontal, 14).padding(.vertical, 6)
             actionRow(icon: "plus", tinted: true, title: "New session") { promptNewSession() }
@@ -185,7 +173,7 @@ struct MenuBarPopoverView: View {
     private var footer: some View {
         HStack(spacing: 4) {
             footerButton("Dashboard", "square.grid.2x2") { app.showDashboard() }
-            footerButton("Palette", "magnifyingglass", kbd: "⌥Space") { app.showCommandPalette() }
+            footerButton("Palette", "magnifyingglass") { app.showCommandPalette() }
             Spacer(minLength: 8)
             overflowMenu
         }
@@ -423,15 +411,18 @@ private struct PopoverSessionRow: View {
     let counts: String
     /// Non-nil only for attached sessions; surfaced as a hover-revealed Detach pill.
     var detach: (() -> Void)? = nil
+    let onTogglePin: () -> Void
+    let onRename: () -> Void
+    let onKill: () -> Void
     let action: () -> Void
 
     @State private var hovering = false
 
-    private var showDetach: Bool { hovering && detach != nil }
-
     var body: some View {
-        // Detach is a sibling overlay, not nested in the row Button — so its hit
-        // area intercepts the click cleanly and the row's attach action never fires.
+        // Detach + the "•••" menu are sibling overlays, not nested in the row Button —
+        // so their hit areas intercept the click and the row's attach never fires.
+        // (Right-click .contextMenu does not work in this non-activating NSPopover;
+        // a button-triggered Menu does, like the footer overflow.)
         ZStack(alignment: .trailing) {
             Button(action: action) {
                 HStack(alignment: .top, spacing: 10) {
@@ -461,7 +452,7 @@ private struct PopoverSessionRow: View {
                         .font(Theme.Font.metric)
                         .foregroundStyle(.secondary)
                         .padding(.top, 1)
-                        .opacity(showDetach ? 0 : 1)  // keep width to avoid reflow
+                        .opacity(hovering ? 0 : 1)  // hover swaps counts → action cluster
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 9)
@@ -478,9 +469,16 @@ private struct PopoverSessionRow: View {
             }
             .buttonStyle(.plain)
 
-            if showDetach, let detach {
-                DetachRowButton(action: detach).padding(.trailing, 14)
+            // Always in the view tree (opacity/hit-test gated, not conditionally
+            // inserted) so opening the menu never tears the trigger down mid-present.
+            HStack(spacing: 6) {
+                if let detach { DetachRowButton(action: detach) }
+                RowActionsMenu(pinned: pinned, onTogglePin: onTogglePin,
+                               onRename: onRename, onKill: onKill)
             }
+            .padding(.trailing, 14)
+            .opacity(hovering ? 1 : 0)
+            .allowsHitTesting(hovering)
         }
         .onHover { hovering = $0 }
     }
@@ -516,6 +514,47 @@ private struct DetachRowButton: View {
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
         .help("Detach clients from this session")
+    }
+}
+
+/// Trailing "•••" overflow menu, revealed on row hover — Pin / Rename / Kill.
+/// A button-triggered `Menu` (like the footer overflow) because right-click
+/// `.contextMenu` does not fire in this app's non-activating NSPopover.
+private struct RowActionsMenu: View {
+    let pinned: Bool
+    let onTogglePin: () -> Void
+    let onRename: () -> Void
+    let onKill: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Menu {
+            Button(action: onTogglePin) {
+                Label(pinned ? "Unpin" : "Pin", systemImage: pinned ? "pin.slash" : "pin")
+            }
+            Button(action: onRename) { Label("Rename…", systemImage: "pencil") }
+            Divider()
+            Button(role: .destructive, action: onKill) {
+                Label("Kill Session", systemImage: "trash")
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 26, height: 22)
+                .background(hovering ? Theme.hoverFill : Color.primary.opacity(0.04),
+                            in: RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous)
+                        .strokeBorder(Theme.hairline)
+                }
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .onHover { hovering = $0 }
+        .help("Session actions")
     }
 }
 

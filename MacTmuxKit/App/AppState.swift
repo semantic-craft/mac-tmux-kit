@@ -132,6 +132,7 @@ final class AppState {
     /// from `AppDelegate.applicationDidFinishLaunching` — not from `init` — so the
     /// Carbon hotkey registration runs after AppKit is ready.
     func registerHotkeys() {
+        clearDefaultHotkeysOnce()
         let palette = CommandPaletteController(appState: self)
         commandPalette = palette
         let dash = DashboardWindowController(appState: self)
@@ -148,6 +149,18 @@ final class AppState {
         KeyboardShortcuts.onKeyDown(for: .switchRecentSession) { [weak self] in
             Task { await self?.switchToMostRecent() }
         }
+    }
+
+    /// One-time migration: older builds shipped default global shortcuts (⌘⌥T
+    /// palette, Hyper+D dashboard). Clear whatever is currently bound so the app
+    /// claims nothing until the user sets shortcuts under Settings → Keybindings.
+    /// Guarded by a flag so the user's own later bindings are never wiped.
+    private func clearDefaultHotkeysOnce() {
+        let key = "didClearDefaultHotkeys_v1"
+        let store = UserDefaults.standard
+        guard !store.bool(forKey: key) else { return }
+        KeyboardShortcuts.reset(.toggleCommandPalette, .toggleDashboard, .switchRecentSession)
+        store.set(true, forKey: key)
     }
 
     /// Keep the menu-bar state current even when Tmux Kit has been running for

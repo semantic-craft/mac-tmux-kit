@@ -4,16 +4,15 @@ import KeyboardShortcuts
 /// UserDefaults and supplies a `Recorder` view for the Settings keybindings tab.
 /// (KeyboardShortcuts uses Carbon hotkeys, so this needs no Accessibility grant.)
 extension KeyboardShortcuts.Name {
-    static let toggleCommandPalette = Self(
-        "toggleCommandPalette",
-        default: .init(.t, modifiers: [.command, .option])
-    )
-    /// Switch + focus the most recently active other session. No default binding.
+    // No default bindings — the app ships with global hotkeys unset so it never
+    // claims a shortcut the user wants for something else. Set them under
+    // Settings → Keybindings. (Existing installs are cleared once at launch; see
+    // AppState.clearDefaultHotkeysOnce.)
+    static let toggleCommandPalette = Self("toggleCommandPalette")
+
+    /// Switch + focus the most recently active other session.
     static let switchRecentSession = Self("switchRecentSession")
 
-    /// Open / focus the Dashboard window. Default: Hyper+D (⌘⌃⌥⇧D).
-    static let toggleDashboard = Self(
-        "toggleDashboard",
-        default: .init(.d, modifiers: [.command, .control, .option, .shift])
-    )
+    /// Open / focus the Dashboard window.
+    static let toggleDashboard = Self("toggleDashboard")
 }
