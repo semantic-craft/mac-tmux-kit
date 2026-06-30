@@ -94,7 +94,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func configurePopover() {
         popover.behavior = .transient
-        popover.contentSize = NSSize(width: 390, height: 560)
+        // The hosting controller drives the size from the SwiftUI content (fixed 390
+        // width, intrinsic height), so the popover is as short as the content — no
+        // forced 560pt tall shell.
         popover.animates = true
     }
 
