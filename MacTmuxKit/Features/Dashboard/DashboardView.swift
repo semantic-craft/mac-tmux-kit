@@ -47,6 +47,13 @@ struct DashboardView: View {
                 .help("Command Palette (⌘K)")
             }
             ToolbarItem(placement: .primaryAction) {
+                Button { app.showCheatsheet() } label: {
+                    Image(systemName: "keyboard")
+                }
+                .keyboardShortcut("/", modifiers: .command)
+                .help("tmux Cheatsheet (⌘/)")
+            }
+            ToolbarItem(placement: .primaryAction) {
                 SettingsLink { Image(systemName: "gearshape") }
                     .help("Settings (⌘,)")
             }

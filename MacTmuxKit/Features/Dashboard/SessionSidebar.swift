@@ -13,18 +13,27 @@ struct SessionSidebar: View {
     @State private var confirm: ConfirmAction?
 
     var body: some View {
-        List(selection: $selectedSessionId) {
-            ForEach(app.sessions) { session in
-                SessionSidebarRow(session: session)
-                    .tag(session.id)
-                    .contextMenu { menu(for: session) }
+        // ponytail: custom rows (not List selection) so the selected session keeps
+        // its accent highlight even when keyboard focus is on the pane list — native
+        // List paints the unfocused list's selection grey, which read as "土".
+        ScrollView {
+            LazyVStack(spacing: 2) {
+                ForEach(app.sessions) { session in
+                    SessionSidebarRow(
+                        session: session,
+                        isSelected: selectedSessionId == session.id
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture { selectedSessionId = session.id }
                     .simultaneousGesture(TapGesture(count: 2).onEnded {
                         Task { await app.switchTo(session) }
                     })
+                    .contextMenu { menu(for: session) }
+                }
             }
+            .padding(8)
         }
-        .listStyle(.sidebar)
-        .tint(Theme.accent)
+        .scrollContentBackground(.hidden)
         .overlay {
             if app.sessions.isEmpty {
                 EmptyStateView(
@@ -96,6 +105,7 @@ struct SessionSidebar: View {
 private struct SessionSidebarRow: View {
     @Environment(AppState.self) private var app
     let session: TmuxSession
+    let isSelected: Bool
     @State private var hovering = false
     @State private var editing = false
     @State private var draft = ""
@@ -113,7 +123,7 @@ private struct SessionSidebarRow: View {
                 } else {
                     Text(session.name)
                         .font(.system(size: 13, weight: session.attached ? .semibold : .medium))
-                        .foregroundStyle(session.attached ? .primary : .secondary)
+                        .foregroundStyle(isSelected || session.attached ? .primary : .secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
                     StatePill(attached: session.attached)
@@ -143,7 +153,23 @@ private struct SessionSidebarRow: View {
                 .font(Theme.Font.metricSmall)
                 .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous)
+                .fill(isSelected ? Theme.accentSoft : (hovering ? Theme.hoverFill : Color.clear))
+        )
+        // Persistent accent left-bar marks the attached ("live") session, like the
+        // menu-bar popover. Selection is carried by the accent-soft fill above, so
+        // the two signals don't collide.
+        .overlay(alignment: .leading) {
+            if session.attached {
+                UnevenRoundedRectangle(bottomTrailingRadius: 3, topTrailingRadius: 3)
+                    .fill(Theme.accent)
+                    .frame(width: 3)
+                    .padding(.vertical, 6)
+            }
+        }
         .onHover { hovering = $0 }
     }
 
