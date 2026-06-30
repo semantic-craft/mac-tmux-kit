@@ -16,3 +16,6 @@ xcuserdata/
 
 # Local-only Claude Code overrides (plugin scoping)
 .claude/settings.local.json
+
+# Claude Code worktrees — local isolated repo checkouts, never committed
+.claude/worktrees/
