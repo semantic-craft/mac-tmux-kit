@@ -37,25 +37,49 @@ struct PaneDetailColumn: View {
     }
 
     private func header(_ pane: TmuxPane) -> some View {
-        HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(pane.index): \(app.paneReadableName(pane))")
-                    .font(Theme.Font.detailTitle)
-                Text(detailLine(pane))
-                    .font(Theme.Font.metric)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("PANE PREVIEW")
+                    .font(Theme.Font.capsLabel)
+                    .tracking(1)
+                    .foregroundStyle(.tertiary)
+                Spacer()
+                HStack(spacing: 5) {
+                    Circle().fill(Theme.accent).frame(width: 6, height: 6)
+                    Text("live").font(Theme.Font.metricSmall).foregroundStyle(.tertiary)
+                }
             }
-            Spacer()
-            HStack(spacing: 6) {
-                Button { copy() } label: { Image(systemName: "doc.on.doc") }
-                    .help("Copy content")
-                Button { Task { await load(pane) } } label: { Image(systemName: "arrow.clockwise") }
-                    .help("Reload")
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 7) {
+                        Text("\(pane.index): \(app.paneReadableName(pane))")
+                            .font(Theme.Font.detailTitle)
+                        if pane.active {
+                            Text("ACTIVE")
+                                .font(Theme.Font.pill)
+                                .tracking(0.4)
+                                .foregroundStyle(Theme.accentInk)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(Theme.accentSoft, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+                        }
+                    }
+                    Text(detailLine(pane))
+                        .font(Theme.Font.metric)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                HStack(spacing: 6) {
+                    Button { copy() } label: { Image(systemName: "doc.on.doc") }
+                        .help("Copy content")
+                    Button { Task { await load(pane) } } label: { Image(systemName: "arrow.clockwise") }
+                        .help("Reload")
+                }
+                .buttonStyle(.borderless)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Theme.Radius.card))
             }
-            .buttonStyle(.borderless)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Theme.Radius.card))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

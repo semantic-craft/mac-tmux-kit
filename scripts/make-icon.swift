@@ -3,10 +3,11 @@ import AppKit
 
 // Tmux Kit app icon generator.
 // Concept (chosen from browser-rendered candidates): the tmux PANE SPLIT — one
-// tall active pane on the left (violet, glowing, with a cursor block) and two
+// tall active pane on the left (blue, glowing, with a cursor block) and two
 // stacked "glass" panes on the right. This says "multiplexer / session manager"
 // and is deliberately NOT a ghost or a prompt, so it reads distinctly from
-// Ghostty in the Dock. Violet pairs with Ghostty's palette without imitating it.
+// Ghostty in the Dock. The active pane is TokyoNight blue (#7AA2F7), matching the
+// in-app accent after the blue rebrand.
 // Design space is 1024px; geometry scales by `u = s/1024`. Coordinates are y-up.
 
 func color(_ r: Int, _ g: Int, _ b: Int, _ a: CGFloat = 1) -> NSColor {
@@ -16,12 +17,12 @@ func hex(_ v: Int, _ a: CGFloat = 1) -> NSColor {
     color((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF, a)
 }
 
-// Soft / airy light-lavender palette (chosen from browser-rendered variants).
-let bgTop = hex(0x4A4377)       // lighter indigo-violet (top)
-let bgBottom = hex(0x2A2450)    // medium violet (bottom)
-let violet = hex(0xCFC9FF)      // active pane — light lavender (gradient top)
-let violetDeep = hex(0xB3ABFF)  // active pane (gradient bottom)
-let cursorInk = hex(0x3A3468)   // cursor block, dark for contrast on the light pane
+// TokyoNight-blue palette (rebrand: the active pane = the in-app accent #7AA2F7).
+let bgTop = hex(0x2E3358)       // lighter indigo-blue (top)
+let bgBottom = hex(0x1B1F35)    // deep indigo (bottom)
+let paneTop = hex(0xBCD0FB)     // active pane — light blue (gradient top)
+let paneDeep = hex(0x7AA2F7)    // active pane — TokyoNight blue (gradient bottom)
+let cursorInk = hex(0x1E2440)   // cursor block, dark for contrast on the light pane
 
 func render(_ px: Int) -> Data {
     let s = CGFloat(px)
@@ -64,14 +65,14 @@ func render(_ px: Int) -> Data {
     let active = rrect(232, 300, 280, 424, 30)
     NSGraphicsContext.saveGraphicsState()
     let glow = NSShadow()
-    glow.shadowColor = violet.withAlphaComponent(0.60)
+    glow.shadowColor = paneDeep.withAlphaComponent(0.60)
     glow.shadowBlurRadius = 34 * u
     glow.shadowOffset = .zero
     glow.set()
-    violet.setFill()
+    paneTop.setFill()
     active.fill()                                  // solid fill casts the glow halo
     NSGraphicsContext.restoreGraphicsState()
-    NSGradient(colors: [violetDeep, violet])?.draw(in: active, angle: 90)  // gradient body
+    NSGradient(colors: [paneDeep, paneTop])?.draw(in: active, angle: 90)  // gradient body
     active.lineWidth = 2.5 * u                      // subtle top highlight edge
     color(255, 255, 255, 0.18).setStroke()
     active.stroke()

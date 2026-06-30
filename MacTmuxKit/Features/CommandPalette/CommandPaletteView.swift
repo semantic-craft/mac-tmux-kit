@@ -1,6 +1,9 @@
 import SwiftUI
 import TmuxKitCore
 
+/// Which group a palette row belongs to — drives the SESSIONS / ACTIONS headers.
+enum PaletteGroup { case session, action }
+
 /// One palette result.
 struct CommandPaletteItem: Identifiable {
     let id: String
@@ -8,6 +11,7 @@ struct CommandPaletteItem: Identifiable {
     let subtitle: String
     let icon: String
     let attached: Bool
+    var group: PaletteGroup = .action
     let run: () async -> Void
 }
 
@@ -28,8 +32,10 @@ struct CommandPaletteView: View {
             field
             Divider()
             list
+            Divider()
+            footerHints
         }
-        .frame(width: 560, height: 380)
+        .frame(width: 560, height: 400)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.panel))
         .overlay(
@@ -52,12 +58,12 @@ struct CommandPaletteView: View {
         }
     }
 
-    // MARK: - Subviews
+    // MARK: - Field
 
     private var field: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 15))
+                .font(.system(size: 18))
                 .foregroundStyle(.secondary)
             TextField("Switch session, or > to run a tmux command…", text: $query)
                 .textFieldStyle(.plain)
@@ -65,9 +71,11 @@ struct CommandPaletteView: View {
                 .focused($focused)
                 .onSubmit { runSelected() }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
     }
+
+    // MARK: - List
 
     private var list: some View {
         let entries = items
@@ -75,10 +83,15 @@ struct CommandPaletteView: View {
             ScrollView {
                 LazyVStack(spacing: 2) {
                     ForEach(Array(entries.enumerated()), id: \.element.id) { index, item in
-                        row(item, selected: index == selection)
-                            .id(index)
-                            .contentShape(Rectangle())
-                            .onTapGesture { run(item) }
+                        VStack(alignment: .leading, spacing: 2) {
+                            if index == 0 || entries[index - 1].group != item.group {
+                                groupHeader(item.group)
+                            }
+                            row(item, selected: index == selection)
+                                .id(index)
+                                .contentShape(Rectangle())
+                                .onTapGesture { run(item) }
+                        }
                     }
                     if entries.isEmpty {
                         Text("No matches")
@@ -96,26 +109,85 @@ struct CommandPaletteView: View {
         }
     }
 
+    private func groupHeader(_ group: PaletteGroup) -> some View {
+        Text(group == .session ? "SESSIONS" : "ACTIONS")
+            .font(Theme.Font.capsLabel)
+            .tracking(1)
+            .foregroundStyle(.tertiary)
+            .padding(.horizontal, 10)
+            .padding(.top, 6)
+            .padding(.bottom, 2)
+    }
+
     private func row(_ item: CommandPaletteItem, selected: Bool) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: item.icon)
-                .font(.system(size: 9))
-                .foregroundStyle(item.attached ? Theme.attached : (selected ? .primary : .secondary))
-                .frame(width: 14)
-            Text(item.title)
-                .font(Theme.Font.paletteRow)
-                .foregroundStyle(.primary)
-            Spacer(minLength: 8)
-            if !item.subtitle.isEmpty {
-                Text(item.subtitle)
-                    .font(Theme.Font.rowSubtitle)
-                    .foregroundStyle(.secondary)
+        HStack(spacing: 11) {
+            if item.group == .session {
+                StatusDot(attached: item.attached)
+                HStack(spacing: 8) {
+                    Text(item.title)
+                        .font(.system(size: 13.5, weight: item.attached ? .semibold : .medium))
+                        .foregroundStyle(.primary)
+                    if !item.subtitle.isEmpty {
+                        Text(item.subtitle)
+                            .font(Theme.Font.metric)
+                            .foregroundStyle(item.attached ? Theme.accentInk : .secondary)
+                    }
+                }
+                Spacer(minLength: 8)
+                if selected {
+                    HStack(spacing: 6) {
+                        Text("switch & focus").font(.system(size: 11)).foregroundStyle(.secondary)
+                        keyCap("↵")
+                    }
+                }
+            } else {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color.primary.opacity(0.05))
+                    .overlay { Image(systemName: item.icon).font(.system(size: 13)).foregroundStyle(.secondary) }
+                    .frame(width: 22, height: 22)
+                Text(item.title).font(.system(size: 13)).foregroundStyle(.primary)
+                Spacer(minLength: 8)
+                if !item.subtitle.isEmpty {
+                    Text(item.subtitle).font(Theme.Font.metricSmall).foregroundStyle(.tertiary)
+                }
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
         .background(selected ? Theme.accentSoft : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.row))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous))
+    }
+
+    // MARK: - Footer
+
+    private var footerHints: some View {
+        HStack(spacing: 14) {
+            hint("↵", "switch & focus")
+            hint("↑↓", "move")
+            hint("›", "tmux command")
+            Spacer(minLength: 8)
+            hint("esc", "close")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
+        .background(Color.primary.opacity(0.02))
+    }
+
+    private func hint(_ key: String, _ text: String) -> some View {
+        HStack(spacing: 5) {
+            keyCap(key)
+            Text(text).font(.system(size: 10.5)).foregroundStyle(.secondary)
+        }
+    }
+
+    private func keyCap(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 10, design: .monospaced))
+            .foregroundStyle(.secondary)
+            .frame(minWidth: 16, minHeight: 16)
+            .padding(.horizontal, 4)
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: 4, style: .continuous).strokeBorder(Theme.hairline) }
     }
 
     // MARK: - Items
@@ -144,7 +216,8 @@ struct CommandPaletteView: View {
                     title: s.name,
                     subtitle: s.attached ? "attached · \(s.windowCount)w" : "\(s.windowCount)w",
                     icon: s.attached ? "circle.fill" : "circle",
-                    attached: s.attached
+                    attached: s.attached,
+                    group: .session
                 ) { await app.switchTo(s) }
             }
 
@@ -152,18 +225,18 @@ struct CommandPaletteView: View {
         if isValidSessionName(raw),
            !app.sessions.contains(where: { $0.name.caseInsensitiveCompare(raw) == .orderedSame }) {
             result.append(CommandPaletteItem(
-                id: "create", title: "Create session \"\(raw)\"", subtitle: "new",
-                icon: "plus.circle", attached: false
+                id: "create", title: "Create session \"\(raw)\"", subtitle: "new session",
+                icon: "plus", attached: false, group: .session
             ) { await app.newSession(name: raw, startDir: nil) })
         }
 
         // Static actions, filtered by the query.
         let actions = [
-            CommandPaletteItem(id: "act:save", title: "Save layout", subtitle: "tmux-resurrect",
+            CommandPaletteItem(id: "act:save", title: "Save layout", subtitle: "snapshot all panes",
                                icon: "tray.and.arrow.down", attached: false) { _ = await app.resurrectSave() },
             CommandPaletteItem(id: "act:restore", title: "Restore layout", subtitle: "tmux-resurrect",
-                               icon: "tray.and.arrow.up", attached: false) { _ = await app.resurrectRestore() },
-            CommandPaletteItem(id: "act:refresh", title: "Refresh", subtitle: "",
+                               icon: "arrow.counterclockwise", attached: false) { _ = await app.resurrectRestore() },
+            CommandPaletteItem(id: "act:refresh", title: "Refresh", subtitle: "re-query server",
                                icon: "arrow.clockwise", attached: false) { await app.refresh() },
         ]
         result += actions.filter { lower.isEmpty || $0.title.lowercased().contains(lower) }

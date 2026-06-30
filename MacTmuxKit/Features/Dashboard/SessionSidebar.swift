@@ -24,6 +24,7 @@ struct SessionSidebar: View {
             }
         }
         .listStyle(.sidebar)
+        .tint(Theme.accent)
         .overlay {
             if app.sessions.isEmpty {
                 EmptyStateView(
@@ -100,11 +101,9 @@ private struct SessionSidebarRow: View {
     @State private var draft = ""
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: session.attached ? "circle.fill" : "circle")
-                .font(.system(size: 8))
-                .foregroundStyle(session.attached ? Theme.attached : Color.secondary)
-            VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 7) {
+                StatusDot(attached: session.attached)
                 if editing {
                     RenameField(
                         text: $draft, prompt: "Session name",
@@ -112,42 +111,39 @@ private struct SessionSidebarRow: View {
                         onCommit: commit, onCancel: { editing = false }
                     )
                 } else {
-                    HStack(spacing: 4) {
-                        Text(session.name)
-                            .font(Theme.Font.rowTitle)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                        if app.isPinned(session) {
-                            Image(systemName: "pin.fill")
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundStyle(Theme.accent)
-                                .accessibilityLabel("Pinned")
+                    Text(session.name)
+                        .font(.system(size: 13, weight: session.attached ? .semibold : .medium))
+                        .foregroundStyle(session.attached ? .primary : .secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    StatePill(attached: session.attached)
+                    if app.isPinned(session) {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(Theme.accent)
+                            .accessibilityLabel("Pinned")
+                    }
+                    Spacer(minLength: 4)
+                    if hovering {
+                        RenamePencil(action: startEditing)
+                        Button { Task { await app.switchTo(session) } } label: {
+                            Image(systemName: "arrow.up.forward.app")
                         }
+                        .buttonStyle(.borderless)
+                        .help("Switch and focus")
                     }
                 }
-                Text(folder(app.sessionDisplayPath(session)))
-                    .font(Theme.Font.rowSubtitle)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
             }
-            Spacer(minLength: 6)
-            if !editing {
-                if hovering {
-                    RenamePencil(action: startEditing)
-                    Button { Task { await app.switchTo(session) } } label: {
-                        Image(systemName: "arrow.up.forward.app")
-                    }
-                    .buttonStyle(.borderless)
-                    .help("Switch and focus")
-                } else {
-                    Text(countText)
-                        .font(Theme.Font.metric)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            Text(subtitle)
+                .font(Theme.Font.metric)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Text(countsLine)
+                .font(Theme.Font.metricSmall)
+                .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, 3)
+        .padding(.vertical, 4)
         .onHover { hovering = $0 }
     }
 
@@ -163,12 +159,16 @@ private struct SessionSidebarRow: View {
         Task { await app.renameSession(session, to: name) }
     }
 
-    private func folder(_ path: String) -> String {
-        pathLastComponent(path) ?? "~"
+    private var subtitle: String {
+        let folder = pathLastComponent(app.sessionDisplayPath(session)) ?? "~"
+        guard let w = app.activeWindow(in: session) else { return folder }
+        return "\(folder) · \(w.index): \(app.windowReadableName(w, activePane: app.activePane(in: w)))"
     }
 
-    private var countText: String {
+    private var countsLine: String {
         let panes = app.paneCount(in: session)
-        return panes > 0 ? "\(session.windowCount)w · \(panes)p" : "\(session.windowCount)w"
+        let windows = session.windowCount == 1 ? "1 window" : "\(session.windowCount) windows"
+        let panesText = panes == 1 ? "1 pane" : "\(panes) panes"
+        return "\(windows) · \(panesText)"
     }
 }

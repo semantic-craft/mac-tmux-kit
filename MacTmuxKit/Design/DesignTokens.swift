@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 /// Design tokens for Tmux Kit — one source of truth for color, type, and metrics.
 ///
@@ -26,14 +27,22 @@ enum Theme {
     // obvious alternate accent.
     static let ghostty = GhosttyTheme.resolve() ?? .flexokiFallback
 
-    /// Brand accent — the terminal's green (active pane/window, attached, focus).
-    static var accent: Color { ghostty.green }
-    /// Selected-row fill — Ghostty's own `selection-background`, so a highlighted
-    /// row matches a text selection in the real terminal.
-    static var accentSoft: Color { ghostty.selection }
+    /// Brand accent — the terminal's blue (active pane/window, attached, focus,
+    /// primary actions). TokyoNight's ANSI-4 blue; a deliberate move off green so the
+    /// attached session is the single loud signal across the redesigned surfaces.
+    static var accent: Color { ghostty.blue }
+    /// Selected/attached emphasis fill — the accent at a light wash (legible behind
+    /// dark text on the frosted light chrome).
+    static var accentSoft: Color { ghostty.blue.opacity(0.16) }
+    /// Fainter accent wash — attached-row resting background / accent-row hover.
+    static var accentFaint: Color { ghostty.blue.opacity(0.08) }
+    /// Darkened accent for accent-colored TEXT and icons on light chrome — the raw
+    /// accent blue fails AA as text, so blend it toward black. Derived (not hardcoded)
+    /// so it still tracks the user's live theme.
+    static var accentInk: Color { ghostty.blue.darkened(0.34) }
 
     // MARK: - Status (state only, never decoration)
-    static var attached: Color { ghostty.green }
+    static var attached: Color { ghostty.blue }
     static var success: Color { ghostty.green }
     static var warning: Color { ghostty.yellow }
     static var danger: Color { ghostty.red }
@@ -62,6 +71,12 @@ enum Theme {
     // Named roles (Linear/Vercel discipline). Technical labels are monospaced —
     // the "developer console" voice that connects a GUI to its terminal subject.
     enum Font {
+        /// Mono caps section label (`RECENT SESSIONS`, `SESSIONS`, `ACTIONS`) — apply
+        /// `.tracking(1)` at the use site for the letter-spacing.
+        static let capsLabel = SwiftUI.Font.system(size: 10, weight: .semibold, design: .monospaced)
+        /// Mono uppercase state pill (`ATTACHED`).
+        static let pill = SwiftUI.Font.system(size: 9, weight: .semibold, design: .monospaced)
+
         static let rowTitle = SwiftUI.Font.system(size: 13, weight: .medium)
         static let rowTitlePlain = SwiftUI.Font.system(size: 13)
         static let rowSubtitle = SwiftUI.Font.system(size: 11)
@@ -84,6 +99,15 @@ enum Theme {
 }
 
 extension Color {
+    /// Darken by blending toward black by `fraction` (0…1). Used for accent text/icons
+    /// that must stay legible on light chrome. Operates on the resolved color, so it
+    /// still tracks the user's live theme.
+    func darkened(_ fraction: Double) -> Color {
+        let base = NSColor(self).usingColorSpace(.sRGB) ?? NSColor(self)
+        let blended = base.blended(withFraction: CGFloat(fraction), of: .black) ?? base
+        return Color(nsColor: blended)
+    }
+
     /// Hex-literal initializer, e.g. `Color(hex: 0x3ECF8E)`.
     init(hex: UInt32, alpha: Double = 1) {
         let r = Double((hex >> 16) & 0xFF) / 255
