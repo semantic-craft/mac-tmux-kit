@@ -407,6 +407,9 @@ final class AppState {
     func killSession(_ s: TmuxSession) async {
         await run(success: "Killed session") { try await $0.killSession(id: s.id) }
     }
+    func detachSession(_ s: TmuxSession) async {
+        await run(success: "Detached session") { try await $0.detachSession(id: s.id) }
+    }
     func killOtherSessions(keep s: TmuxSession) async {
         await run(success: "Killed other sessions") { try await $0.killOtherSessions(keep: s.id) }
     }

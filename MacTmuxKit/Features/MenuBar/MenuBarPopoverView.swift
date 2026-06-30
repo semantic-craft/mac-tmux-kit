@@ -109,9 +109,26 @@ struct MenuBarPopoverView: View {
                 PopoverSessionRow(
                     name: session.name,
                     attached: session.attached,
+                    pinned: app.isPinned(session),
                     subtitle: popoverSubtitle(session, window),
-                    counts: "\(session.windowCount)w · \(app.paneCount(in: session))p"
+                    counts: "\(session.windowCount)w · \(app.paneCount(in: session))p",
+                    detach: session.attached ? { Task { await app.detachSession(session) } } : nil
                 ) { Task { await app.activateFromMenuBar(session) } }
+                .contextMenu {
+                    Button {
+                        app.togglePin(session)
+                    } label: {
+                        Label(app.isPinned(session) ? "Unpin" : "Pin",
+                              systemImage: app.isPinned(session) ? "pin.slash" : "pin")
+                    }
+                    Button { promptRename(session) } label: {
+                        Label("Rename…", systemImage: "pencil")
+                    }
+                    Divider()
+                    Button(role: .destructive) { confirmKill(session) } label: {
+                        Label("Kill Session", systemImage: "trash")
+                    }
+                }
             }
             Divider().padding(.horizontal, 14).padding(.vertical, 6)
             actionRow(icon: "plus", tinted: true, title: "New session") { promptNewSession() }
@@ -355,6 +372,37 @@ struct MenuBarPopoverView: View {
         Task { await app.newSession(name: name, startDir: nil) }
     }
 
+    /// Native rename prompt, pre-filled with the current name (same transient-popover
+    /// robustness as `promptNewSession`).
+    private func promptRename(_ session: TmuxSession) {
+        let alert = NSAlert()
+        alert.messageText = "Rename session"
+        alert.informativeText = "Enter a new name for “\(session.name)”."
+        alert.addButton(withTitle: "Rename")
+        alert.addButton(withTitle: "Cancel")
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 220, height: 24))
+        field.stringValue = session.name
+        alert.accessoryView = field
+        alert.window.initialFirstResponder = field
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        let name = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, name != session.name else { return }
+        Task { await app.renameSession(session, to: name) }
+    }
+
+    /// Native confirm before killing — destructive and irreversible.
+    private func confirmKill(_ session: TmuxSession) {
+        let alert = NSAlert()
+        alert.messageText = "Kill session “\(session.name)”?"
+        alert.informativeText = "This ends the session and every process running in it. This can't be undone."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Kill")
+        alert.addButton(withTitle: "Cancel")
+        alert.buttons.first?.hasDestructiveAction = true
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        Task { await app.killSession(session) }
+    }
+
     private func timeString(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .none
@@ -370,56 +418,104 @@ struct MenuBarPopoverView: View {
 private struct PopoverSessionRow: View {
     let name: String
     let attached: Bool
+    var pinned: Bool = false
     let subtitle: String
     let counts: String
+    /// Non-nil only for attached sessions; surfaced as a hover-revealed Detach pill.
+    var detach: (() -> Void)? = nil
     let action: () -> Void
 
     @State private var hovering = false
 
+    private var showDetach: Bool { hovering && detach != nil }
+
     var body: some View {
-        Button(action: action) {
-            HStack(alignment: .top, spacing: 10) {
-                StatusDot(attached: attached).padding(.top, 3)
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 7) {
-                        Text(name)
-                            .font(.system(size: 13, weight: attached ? .semibold : .medium))
-                            .foregroundStyle(attached ? .primary : .secondary)
+        // Detach is a sibling overlay, not nested in the row Button — so its hit
+        // area intercepts the click cleanly and the row's attach action never fires.
+        ZStack(alignment: .trailing) {
+            Button(action: action) {
+                HStack(alignment: .top, spacing: 10) {
+                    StatusDot(attached: attached).padding(.top, 3)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 7) {
+                            Text(name)
+                                .font(.system(size: 13, weight: attached ? .semibold : .medium))
+                                .foregroundStyle(attached ? .primary : .secondary)
+                                .lineLimit(1)
+                            StatePill(attached: attached)
+                            if pinned {
+                                Image(systemName: "pin.fill")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.tertiary)
+                                    .help("Pinned")
+                            }
+                        }
+                        Text(subtitle)
+                            .font(Theme.Font.metric)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
-                        StatePill(attached: attached)
+                            .truncationMode(.middle)
                     }
-                    Text(subtitle)
+                    Spacer(minLength: 8)
+                    Text(counts)
                         .font(Theme.Font.metric)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                        .padding(.top, 1)
+                        .opacity(showDetach ? 0 : 1)  // keep width to avoid reflow
                 }
-                Spacer(minLength: 8)
-                Text(counts)
-                    .font(Theme.Font.metric)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 1)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 9)
-            .background(background)
-            .overlay(alignment: .leading) {
-                if attached {
-                    UnevenRoundedRectangle(bottomTrailingRadius: 3, topTrailingRadius: 3)
-                        .fill(Theme.accent)
-                        .frame(width: 3)
-                        .padding(.vertical, 7)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background(background)
+                .overlay(alignment: .leading) {
+                    if attached {
+                        UnevenRoundedRectangle(bottomTrailingRadius: 3, topTrailingRadius: 3)
+                            .fill(Theme.accent)
+                            .frame(width: 3)
+                            .padding(.vertical, 7)
+                    }
                 }
+                .contentShape(Rectangle())
             }
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+
+            if showDetach, let detach {
+                DetachRowButton(action: detach).padding(.trailing, 14)
+            }
         }
-        .buttonStyle(.plain)
         .onHover { hovering = $0 }
     }
 
     private var background: Color {
         if attached { return hovering ? Theme.accent.opacity(0.15) : Theme.accentFaint }
         return hovering ? Theme.hoverFill : .clear
+    }
+}
+
+/// Trailing Detach pill, revealed on row hover for attached sessions. Detach is
+/// non-destructive (the session keeps running), so it stays neutral — never danger.
+private struct DetachRowButton: View {
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: "eject").font(.system(size: 10, weight: .semibold))
+                Text("Detach").font(.system(size: 11, weight: .medium))
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8).padding(.vertical, 3)
+            .background(hovering ? Theme.hoverFill : Color.primary.opacity(0.04),
+                        in: RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous)
+                    .strokeBorder(Theme.hairline)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .help("Detach clients from this session")
     }
 }
 

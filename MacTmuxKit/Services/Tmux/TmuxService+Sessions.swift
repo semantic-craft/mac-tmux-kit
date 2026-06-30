@@ -17,6 +17,12 @@ extension TmuxService {
         try await run(["kill-session", "-t", id])
     }
 
+    /// Detach every client from a session (it keeps running). Works from outside
+    /// the session — the attached terminal's `tmux attach` exits.
+    func detachSession(id: String) async throws {
+        try await run(["detach-client", "-s", id])
+    }
+
     /// Kill every session except the one to keep.
     func killOtherSessions(keep id: String) async throws {
         try await run(["kill-session", "-a", "-t", id])
