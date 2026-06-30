@@ -27,11 +27,7 @@ struct SessionSidebar: View {
         .tint(Theme.accent)
         .overlay {
             if app.sessions.isEmpty {
-                EmptyStateView(
-                    icon: "rectangle.3.group",
-                    title: app.statusMessage ?? "No tmux sessions",
-                    subtitle: "Create one with the + button"
-                )
+                sidebarState
             }
         }
         .navigationTitle("Sessions")
@@ -51,6 +47,48 @@ struct SessionSidebar: View {
         }
         .sheet(item: $prompt) { TextPromptSheet(prompt: $0) }
         .confirm($confirm)
+    }
+
+    @ViewBuilder
+    private var sidebarState: some View {
+        if app.isLoading {
+            VStack(spacing: 10) {
+                ProgressView().controlSize(.small)
+                Text("Querying tmux server...")
+                    .font(Theme.Font.rowSubtitle)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(24)
+        } else if app.lastRefreshFailed {
+            VStack(spacing: 12) {
+                Image(systemName: "powerplug")
+                    .font(.system(size: 30))
+                    .foregroundStyle(.secondary)
+                Text("Can't reach tmux")
+                    .font(Theme.Font.body)
+                    .foregroundStyle(.secondary)
+                Text(app.statusMessage ?? "Check the tmux socket, then try again.")
+                    .font(Theme.Font.rowSubtitle)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+                Button {
+                    Task { await app.refresh() }
+                } label: {
+                    Label("Retry", systemImage: "arrow.clockwise")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(24)
+        } else {
+            EmptyStateView(
+                icon: "rectangle.3.group",
+                title: "No tmux sessions",
+                subtitle: "Create one with the + button"
+            )
+        }
     }
 
     @ViewBuilder
