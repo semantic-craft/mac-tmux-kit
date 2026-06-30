@@ -222,9 +222,8 @@ final class AppState {
     }
 
     func previewPane(in sessionId: String?) -> TmuxPane? {
-        guard let sessionId else { return nil }
-        let sessionPanes = panes.filter { $0.sessionId == sessionId }
-        return sessionPanes.first { $0.active } ?? sessionPanes.first
+        guard let sessionId, let session = session(id: sessionId) else { return nil }
+        return activePane(in: session) ?? panes.first { $0.sessionId == sessionId }
     }
 
     func paneCount(in session: TmuxSession) -> Int {

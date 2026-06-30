@@ -86,6 +86,38 @@ final class AppStateRefreshTests: XCTestCase {
         XCTAssertEqual(app.previewPane(in: "$1")?.id, "%3")
     }
 
+    func testPreviewPaneUsesActivePaneFromActiveWindow() async {
+        let session = TmuxSession(
+            id: "$1",
+            name: "work",
+            attached: false,
+            windowCount: 2,
+            created: Date(timeIntervalSince1970: 1),
+            activity: Date(timeIntervalSince1970: 1),
+            path: "/tmp"
+        )
+        let inactiveWindow = TmuxWindow(sessionId: "$1", id: "@1", index: 0, name: "logs", active: false, paneCount: 1, layout: "")
+        let activeWindow = TmuxWindow(sessionId: "$1", id: "@2", index: 1, name: "shell", active: true, paneCount: 1, layout: "")
+        let app = AppState(
+            stateReader: FakeTmuxStateReader([
+                .snapshot(TmuxSnapshot(
+                    sessions: [session],
+                    windows: [inactiveWindow, activeWindow],
+                    panes: [
+                        .pane(id: "%1", windowId: "@1", active: true),
+                        .pane(id: "%2", windowId: "@2", active: true),
+                    ],
+                    hostShort: "mac"
+                ))
+            ]),
+            preloadTheme: false
+        )
+
+        await app.refresh()
+
+        XCTAssertEqual(app.previewPane(in: "$1")?.id, "%2")
+    }
+
     func testCapturePreviewContainsFailure() async {
         let reader = FakeTmuxStateReader(
             [.snapshot(.session(name: "broken", panes: [.pane(id: "%5", active: true)]))],
@@ -268,9 +300,13 @@ private extension TmuxSession {
 
 private extension TmuxPane {
     static func pane(id: String, active: Bool) -> TmuxPane {
+        pane(id: id, windowId: "@1", active: active)
+    }
+
+    static func pane(id: String, windowId: String, active: Bool) -> TmuxPane {
         TmuxPane(
             sessionId: "$1",
-            windowId: "@1",
+            windowId: windowId,
             id: id,
             index: Int(id.dropFirst()) ?? 0,
             active: active,
