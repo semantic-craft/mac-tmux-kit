@@ -93,7 +93,7 @@ private struct GeneralPane: View {
                 Toggle("Show menu bar icon", isOn: $showMenuBarIcon)
                 Toggle("Show Dock icon", isOn: $showDockIcon)
                     .onChange(of: showDockIcon) { _, _ in AppActivationPolicy.applyDockPreference() }
-                Text("When hidden, summon the app with your global shortcuts: Dashboard (⌘⌃⌥⇧D) and Command palette (⌥⌘T). Set them under Keybindings.")
+                Text("When hidden, summon the app with the global shortcuts you set under Keybindings. None are assigned by default.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
