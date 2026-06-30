@@ -131,6 +131,49 @@ final class AppStateRefreshTests: XCTestCase {
         XCTAssertTrue(restarted.pinnedSessionNames.contains("work"))
     }
 
+    func testPinnedSessionNameMigratesAfterRename() async {
+        let defaults = FakeDefaults(pinnedSessionNames: ["work"])
+        let reader = FakeTmuxStateReader([
+            .snapshot(.sessions([.session(id: "$1", name: "work", activity: 1)])),
+            .snapshot(.sessions([.session(id: "$1", name: "client-a", activity: 2)])),
+        ])
+        let app = AppState(
+            service: TmuxService(binary: URL(fileURLWithPath: "/usr/bin/true")),
+            stateReader: reader,
+            defaults: defaults,
+            preloadTheme: false
+        )
+
+        await app.refresh()
+        await app.renameSession(app.sessions[0], to: "client-a")
+
+        XCTAssertFalse(app.pinnedSessionNames.contains("work"))
+        XCTAssertTrue(app.pinnedSessionNames.contains("client-a"))
+
+        let restarted = AppState(stateReader: FakeTmuxStateReader([.snapshot(.empty)]), defaults: defaults, preloadTheme: false)
+        XCTAssertFalse(restarted.pinnedSessionNames.contains("work"))
+        XCTAssertTrue(restarted.pinnedSessionNames.contains("client-a"))
+    }
+
+    func testUnpinnedSessionRenameDoesNotCreatePinnedName() async {
+        let defaults = FakeDefaults()
+        let reader = FakeTmuxStateReader([
+            .snapshot(.sessions([.session(id: "$1", name: "work", activity: 1)])),
+            .snapshot(.sessions([.session(id: "$1", name: "client-a", activity: 2)])),
+        ])
+        let app = AppState(
+            service: TmuxService(binary: URL(fileURLWithPath: "/usr/bin/true")),
+            stateReader: reader,
+            defaults: defaults,
+            preloadTheme: false
+        )
+
+        await app.refresh()
+        await app.renameSession(app.sessions[0], to: "client-a")
+
+        XCTAssertTrue(app.pinnedSessionNames.isEmpty)
+    }
+
     func testUnknownPinnedNamesDoNotCreateLiveRows() async {
         let defaults = FakeDefaults(pinnedSessionNames: ["missing"])
         let app = AppState(

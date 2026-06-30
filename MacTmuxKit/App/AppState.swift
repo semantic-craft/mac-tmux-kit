@@ -321,10 +321,13 @@ final class AppState {
 
     /// Run a mutating action, then refresh. On success, optionally flash a
     /// confirmation toast; on failure, surface the error inline and as a toast.
-    func run(success: String? = nil, _ work: @escaping (TmuxService) async throws -> Void) async {
-        guard let service else { return }
+    @discardableResult
+    func run(success: String? = nil, _ work: @escaping (TmuxService) async throws -> Void) async -> Bool {
+        guard let service else { return false }
+        var succeeded = false
         do {
             try await work(service)
+            succeeded = true
             if let success { showToast(success, kind: .success) }
         } catch {
             let text = message(for: error)
@@ -332,6 +335,7 @@ final class AppState {
             showToast(text, kind: .failure)
         }
         await refresh()
+        return succeeded
     }
 
     /// Flash a transient toast, auto-dismissed after ~2s unless superseded.
@@ -402,7 +406,11 @@ final class AppState {
         await run(success: "Created session") { try await $0.newSession(name: name, startDir: startDir) }
     }
     func renameSession(_ s: TmuxSession, to name: String) async {
-        await run(success: "Renamed session") { try await $0.renameSession(id: s.id, to: name) }
+        let wasPinned = isPinned(s)
+        let renamed = await run(success: "Renamed session") { try await $0.renameSession(id: s.id, to: name) }
+        if renamed, wasPinned {
+            migratePinnedSessionName(from: s.name, to: name)
+        }
     }
     func killSession(_ s: TmuxSession) async {
         await run(success: "Killed session") { try await $0.killSession(id: s.id) }
@@ -608,6 +616,12 @@ final class AppState {
     private func persistPinnedSessionNames() {
         defaults.set(Array(pinnedSessionNames).sorted(), forKey: Self.pinnedSessionNamesKey)
         defaults.synchronize()
+    }
+
+    private func migratePinnedSessionName(from oldName: String, to newName: String) {
+        guard oldName != newName, pinnedSessionNames.remove(oldName) != nil else { return }
+        pinnedSessionNames.insert(newName)
+        persistPinnedSessionNames()
     }
 
     private func debugSessionLines(
