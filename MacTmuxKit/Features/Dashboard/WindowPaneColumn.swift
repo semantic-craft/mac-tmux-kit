@@ -3,8 +3,7 @@ import AppKit
 import TmuxKitCore
 
 /// Column 2: the selected session's windows (as sections) and panes (as rows).
-/// A persistent action bar at the bottom operates on the selected pane, so the
-/// common operations are always one click away.
+/// Pane actions live in column 3's action bar, next to the pane preview.
 struct WindowPaneColumn: View {
     @Environment(AppState.self) private var app
     let sessionId: String?
@@ -19,15 +18,19 @@ struct WindowPaneColumn: View {
     var body: some View {
         Group {
             if let session {
-                VStack(spacing: 0) {
-                    List(selection: $selectedPaneId) {
+                // ponytail: custom rows (not List selection) so pane selection is the
+                // same accent-soft fill as the session sidebar — one selection look
+                // across both columns, independent of which list holds keyboard focus.
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 2) {
                         ForEach(windows) { window in
                             let windowPanes = app.tree.panes(in: window.id)
                             let activePane = windowPanes.first { $0.active } ?? windowPanes.first
                             Section {
                                 ForEach(windowPanes) { pane in
-                                    PaneRow(pane: pane)
-                                        .tag(pane.id)
+                                    PaneRow(pane: pane, isSelected: selectedPaneId == pane.id)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture { selectedPaneId = pane.id }
                                         .contextMenu { paneMenu(pane) }
                                 }
                             } header: {
@@ -35,16 +38,15 @@ struct WindowPaneColumn: View {
                                     window: window,
                                     title: app.windowReadableName(window, activePane: activePane)
                                 )
+                                    .padding(.top, 6)
+                                    .padding(.bottom, 1)
                                     .contextMenu { windowMenu(window) }
                             }
                         }
                     }
-                    .listStyle(.inset)
-                    .tint(Theme.accent)
-
-                    Divider()
-                    PaneActionBar(pane: app.pane(id: selectedPaneId), prompt: $prompt, confirm: $confirm)
+                    .padding(8)
                 }
+                .scrollContentBackground(.hidden)
                 .navigationTitle(session.name)
                 .navigationSubtitle(session.windowCount == 1 ? "1 window" : "\(session.windowCount) windows")
             } else {
@@ -194,6 +196,7 @@ private struct WindowHeaderRow: View {
 private struct PaneRow: View {
     @Environment(AppState.self) private var app
     let pane: TmuxPane
+    let isSelected: Bool
     @State private var editing = false
     @State private var draft = ""
     @State private var hovering = false
@@ -226,12 +229,19 @@ private struct PaneRow: View {
                 Text(pane.id)
                     .font(Theme.Font.metricSmall)
                     .foregroundStyle(.tertiary)
+                    .frame(width: 34, alignment: .trailing)
                 Text("\(pane.width)×\(pane.height)")
                     .font(Theme.Font.metricSmall)
                     .foregroundStyle(.tertiary)
+                    .frame(width: 52, alignment: .trailing)
             }
         }
-        .padding(.vertical, 2)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 4)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous)
+                .fill(isSelected ? Theme.accentSoft : (hovering ? Theme.hoverFill : Color.clear))
+        )
         .onHover { hovering = $0 }
     }
 

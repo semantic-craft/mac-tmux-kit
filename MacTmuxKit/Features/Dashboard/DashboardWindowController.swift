@@ -29,7 +29,9 @@ final class DashboardWindowController: NSObject, NSWindowDelegate {
     private func makeWindow() -> NSWindow {
         let w = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 980, height: 600),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+            // ponytail: standard titlebar (no .fullSizeContentView) so the 3-column
+            // toolbar sits in a real unified titlebar instead of floating over content.
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )

@@ -23,6 +23,7 @@ struct PaneActionBar: View {
                 if let p = pane { Task { await app.breakPane(p) } }
             }
             barButton("Rename", "pencil") { renamePane() }
+            Spacer(minLength: 8)
             barButton("Kill", "xmark", tint: Theme.danger) {
                 if let p = pane { askKillPane(p) }
             }
@@ -39,13 +40,13 @@ struct PaneActionBar: View {
     private func barButton(_ title: String, _ symbol: String, tint: Color? = nil,
                            _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 3) {
-                Image(systemName: symbol).font(.system(size: 15))
-                Text(title).font(.system(size: 9.5))
+            HStack(spacing: 5) {
+                Image(systemName: symbol).font(.system(size: 12, weight: .medium))
+                Text(title).font(Theme.Font.rowSubtitle).lineLimit(1).fixedSize()
             }
             .foregroundStyle(tint ?? .secondary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
