@@ -1,89 +1,65 @@
 import SwiftUI
 import TmuxKitCore
 
-/// Always-visible action bar for the selected pane: labeled buttons for the
-/// common operations (no menu paging). Low-frequency actions (Mark, Clear
-/// History) live in the pane's right-click menu. Disabled when no pane is
-/// selected. Destructive hierarchy: "Kill Pane" is the primary red action;
-/// "Kill Others" is rarer, shown lighter (red text, not a red fill).
+/// Always-visible action bar for the selected pane: the five most common
+/// operations as icon + label, one tap each. Lower-frequency actions (Swap,
+/// Kill Others, Mark, Clear History) live in the pane's right-click menu.
+/// Disabled when no pane is selected.
 struct PaneActionBar: View {
     @Environment(AppState.self) private var app
     let pane: TmuxPane?
     @Binding var prompt: TextPrompt?
     @Binding var confirm: ConfirmAction?
-    @State private var showSwap = false
-
-    // Two equal columns (not .adaptive — that doesn't guarantee equal widths,
-    // and a content-sized cell lets the Swap Menu shrink below the others).
-    private let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 8) {
-            button("Split Right", "rectangle.righthalf.inset.filled") {
-                if let p = pane { await app.split(p, horizontal: true) }
+        HStack(spacing: 2) {
+            barButton("Split R", "rectangle.split.2x1") {
+                if let p = pane { Task { await app.split(p, horizontal: true) } }
             }
-            button("Split Down", "rectangle.bottomhalf.inset.filled") {
-                if let p = pane { await app.split(p, horizontal: false) }
+            barButton("Split D", "rectangle.split.1x2") {
+                if let p = pane { Task { await app.split(p, horizontal: false) } }
             }
-            // Plain Button (not a Menu — Menu won't stretch to fill the cell);
-            // the four directions open in a confirmationDialog on click.
-            Button { showSwap = true } label: {
-                Label("Swap", systemImage: "arrow.left.arrow.right")
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity)
+            barButton("Break", "rectangle.portrait.and.arrow.right") {
+                if let p = pane { Task { await app.breakPane(p) } }
             }
-            .buttonStyle(.bordered)
-            .controlSize(.regular)
-            button("Break Out", "rectangle.badge.plus") {
-                if let p = pane { await app.breakPane(p) }
-            }
-            // Destructive: both kills lightly red-tinted (a solid red FILL needs
-            // .borderedProminent, which sizes differently — so we tint instead,
-            // keeping all six buttons one uniform .bordered size).
-            button("Kill Others", "rectangle.on.rectangle.slash", tint: Theme.danger) {
-                if let p = pane { askKillOthers(p) }
-            }
-            button("Kill Pane", "xmark.square", tint: Theme.danger) {
+            barButton("Rename", "pencil") { renamePane() }
+            barButton("Kill", "xmark", tint: Theme.danger) {
                 if let p = pane { askKillPane(p) }
             }
         }
-        .padding(12)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
         .background(.bar)
         .disabled(pane == nil)
         .opacity(pane == nil ? 0.55 : 1)
-        .confirmationDialog("Swap pane with neighbor", isPresented: $showSwap, titleVisibility: .visible) {
-            Button("Swap Left") { swap(.left) }
-            Button("Swap Right") { swap(.right) }
-            Button("Swap Up") { swap(.up) }
-            Button("Swap Down") { swap(.down) }
-        }
     }
 
     // MARK: - Buttons
 
-    private func button(
-        _ title: String,
-        _ symbol: String,
-        tint: Color? = nil,
-        _ action: @escaping () async -> Void
-    ) -> some View {
-        Button {
-            Task { await action() }
-        } label: {
-            Label(title, systemImage: symbol)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity)
+    private func barButton(_ title: String, _ symbol: String, tint: Color? = nil,
+                           _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 3) {
+                Image(systemName: symbol).font(.system(size: 15))
+                Text(title).font(.system(size: 9.5))
+            }
+            .foregroundStyle(tint ?? .secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.bordered)
-        .controlSize(.regular)
-        .tint(tint)
+        .buttonStyle(.plain)
+        .hoverHighlight(fill: tint == nil ? Theme.hoverFill : tint!.opacity(0.12))
     }
 
     // MARK: - Actions
 
-    private func swap(_ direction: PaneDirection) {
+    private func renamePane() {
         guard let p = pane else { return }
-        Task { await app.swap(p, direction) }
+        prompt = TextPrompt(
+            title: "Rename pane", placeholder: "Pane title",
+            initial: app.paneCustomName(p), confirmLabel: "Rename"
+        ) { title in Task { await app.renamePane(p, to: title) } }
     }
 
     private func askKillPane(_ p: TmuxPane) {
@@ -92,13 +68,5 @@ struct PaneActionBar: View {
             message: "Running: \(p.command)",
             confirmLabel: "Kill"
         ) { Task { await app.killPane(p) } }
-    }
-
-    private func askKillOthers(_ p: TmuxPane) {
-        confirm = ConfirmAction(
-            title: "Kill other panes?",
-            message: "Keeps only \(p.id) in its window.",
-            confirmLabel: "Kill Others"
-        ) { Task { await app.killOtherPanes(p) } }
     }
 }

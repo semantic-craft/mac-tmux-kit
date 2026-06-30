@@ -40,6 +40,7 @@ struct WindowPaneColumn: View {
                         }
                     }
                     .listStyle(.inset)
+                    .tint(Theme.accent)
 
                     Divider()
                     PaneActionBar(pane: app.pane(id: selectedPaneId), prompt: $prompt, confirm: $confirm)
@@ -91,9 +92,16 @@ struct WindowPaneColumn: View {
         Button("Split Down") { Task { await app.split(pane, horizontal: false) } }
         Divider()
         Button("Break to Window") { Task { await app.breakPane(pane) } }
+        Menu("Swap With") {
+            Button("Left") { Task { await app.swap(pane, .left) } }
+            Button("Right") { Task { await app.swap(pane, .right) } }
+            Button("Up") { Task { await app.swap(pane, .up) } }
+            Button("Down") { Task { await app.swap(pane, .down) } }
+        }
         Button("Mark Pane") { Task { await app.markPane(pane) } }
         Button("Clear History") { Task { await app.clearHistory(pane) } }
         Divider()
+        Button("Kill Other Panes", role: .destructive) { confirmKillOthers(pane) }
         Button("Kill Pane", role: .destructive) { confirmKill(pane) }
     }
 
@@ -103,6 +111,14 @@ struct WindowPaneColumn: View {
             message: "Running: \(pane.command)",
             confirmLabel: "Kill"
         ) { Task { await app.killPane(pane) } }
+    }
+
+    private func confirmKillOthers(_ pane: TmuxPane) {
+        confirm = ConfirmAction(
+            title: "Kill other panes?",
+            message: "Keeps only \(pane.id) in its window.",
+            confirmLabel: "Kill Others"
+        ) { Task { await app.killOtherPanes(pane) } }
     }
 
     private func promptNewWindow(in sessionId: String) {
@@ -123,26 +139,32 @@ private struct WindowHeaderRow: View {
     @State private var hovering = false
 
     var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "rectangle.split.3x1")
-                .font(.system(size: 11))
+        HStack(spacing: 8) {
+            Text("\(window.index)")
+                .font(Theme.Font.metricSmall)
                 .foregroundStyle(.secondary)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 1)
+                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
             if editing {
-                Text("\(window.index):")
-                    .font(Theme.Font.sectionHeader)
-                    .foregroundStyle(.secondary)
                 RenameField(
                     text: $draft, prompt: "Window name",
-                    font: Theme.Font.sectionHeader,
+                    font: Theme.Font.bodyEmphasis,
                     onCommit: commit, onCancel: { editing = false }
                 )
             } else {
-                Text("\(window.index): \(title)")
-                    .font(Theme.Font.sectionHeader)
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
                 if window.active {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 9))
-                        .foregroundStyle(Theme.accent)
+                    Text("ACTIVE")
+                        .font(Theme.Font.pill)
+                        .tracking(0.4)
+                        .foregroundStyle(Theme.accentInk)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(Theme.accentSoft, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
                 }
             }
             Spacer()
@@ -150,7 +172,7 @@ private struct WindowHeaderRow: View {
                 if hovering { RenamePencil(action: startEditing) }
                 Text("\(window.paneCount)p")
                     .font(Theme.Font.metricSmall)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
             }
         }
         .onHover { hovering = $0 }
@@ -177,37 +199,39 @@ private struct PaneRow: View {
     @State private var hovering = false
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: pane.active ? "square.fill" : "square")
-                .font(.system(size: 9))
-                .foregroundStyle(pane.active ? Theme.accent : Color.secondary)
-            VStack(alignment: .leading, spacing: 1) {
-                if editing {
-                    RenameField(
-                        text: $draft, prompt: "Pane title",
-                        font: Theme.Font.rowTitlePlain,
-                        onCommit: commit, onCancel: { editing = false }
-                    )
-                } else {
-                    Text("\(pane.index): \(app.paneReadableName(pane))")
-                        .font(Theme.Font.rowTitlePlain)
-                        .lineLimit(1)
-                }
-                Text(detailText)
-                    .font(Theme.Font.rowSubtitle)
-                    .foregroundStyle(.secondary)
+        HStack(spacing: 9) {
+            StatusDot(attached: pane.active, size: 6)
+            if editing {
+                RenameField(
+                    text: $draft, prompt: "Pane title",
+                    font: Theme.Font.rowTitlePlain,
+                    onCommit: commit, onCancel: { editing = false }
+                )
+            } else {
+                Text(app.paneReadableName(pane))
+                    .font(.system(size: 12.5, weight: pane.active ? .semibold : .medium))
+                    .foregroundStyle(pane.active ? .primary : .secondary)
                     .lineLimit(1)
-                    .truncationMode(.middle)
+                if !pane.command.isEmpty {
+                    Text(pane.command)
+                        .font(Theme.Font.rowSubtitle)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
             }
-            Spacer(minLength: 6)
+            Spacer(minLength: 8)
             if !editing {
                 if hovering { RenamePencil(action: startEditing) }
-                Text("\(pane.width)x\(pane.height)")
+                Text(pane.id)
                     .font(Theme.Font.metricSmall)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
+                Text("\(pane.width)×\(pane.height)")
+                    .font(Theme.Font.metricSmall)
+                    .foregroundStyle(.tertiary)
             }
         }
-        .padding(.vertical, 3)
+        .padding(.vertical, 2)
         .onHover { hovering = $0 }
     }
 
@@ -221,9 +245,5 @@ private struct PaneRow: View {
         editing = false
         guard title != app.paneCustomName(pane) else { return }
         Task { await app.renamePane(pane, to: title) }
-    }
-
-    private var detailText: String {
-        app.paneReadableDetail(pane) ?? pane.id
     }
 }

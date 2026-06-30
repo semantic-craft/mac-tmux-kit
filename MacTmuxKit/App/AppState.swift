@@ -72,6 +72,9 @@ final class AppState {
     private(set) var pinnedSessionNames: Set<String>
     private(set) var statusMessage: String?
     private(set) var isLoading = false
+    /// True when the last `refresh()` failed (server unreachable / binary missing), so the
+    /// UI can tell a real "no sessions" empty state from an error. Cleared on a clean read.
+    private(set) var lastRefreshFailed = false
     /// Server short host name, used to tell a default pane title from a user-set
     /// one (tmux seeds `pane_title` with the host). Refreshed with the tree.
     private(set) var hostShort = ""
@@ -279,16 +282,13 @@ final class AppState {
         paneReadableTitle(title: pane.title, command: pane.command, host: hostShort, path: pane.path)
     }
 
-    func paneReadableDetail(_ pane: TmuxPane) -> String? {
-        paneReadableSubtitle(title: pane.title, command: pane.command, host: hostShort, path: pane.path)
-    }
-
     // MARK: - Refresh
 
     /// Reload sessions + windows + panes in parallel. Sessions sort most-active first.
     func refresh() async {
         guard let stateReader else {
             statusMessage = TmuxError.binaryNotFound.userMessage
+            lastRefreshFailed = true
             return
         }
         guard !isLoading else {
@@ -307,8 +307,10 @@ final class AppState {
             panes = pp
             hostShort = hh
             statusMessage = sessions.isEmpty ? "No tmux sessions." : nil
+            lastRefreshFailed = false
         } catch {
             statusMessage = message(for: error)
+            lastRefreshFailed = true
         }
         isLoading = false
         if refreshAgain {
