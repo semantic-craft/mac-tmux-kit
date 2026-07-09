@@ -16,7 +16,7 @@ final class TmuxParserTests: XCTestCase {
         let raw = block([
             ["$47", "web", "1", "3", "1780476888", "1780545950", "/Users/x/Projects/web-app"],
             ["$46", "api", "0", "1", "1780407831", "1780407831", "/Users/x/.cache/api-preview"],
-            ["$33", "docs", "0", "2", "1780355028", "1780460485", "/Users/x/Documents/笔记_示例_中文"],
+            ["$33", "docs", "0", "2", "1780355028", "1780460485", "/Users/example/Documents/笔记_示例_中文"],
         ])
 
         let sessions = TmuxParser.sessions(raw)
@@ -31,7 +31,7 @@ final class TmuxParserTests: XCTestCase {
 
         XCTAssertFalse(sessions[1].attached)
         // Chinese characters in the path survive intact.
-        XCTAssertEqual(sessions[2].path, "/Users/x/Documents/笔记_示例_中文")
+        XCTAssertEqual(sessions[2].path, "/Users/example/Documents/笔记_示例_中文")
     }
 
     // MARK: - Windows
@@ -63,7 +63,7 @@ final class TmuxParserTests: XCTestCase {
     func testParsePanes() {
         let raw = block([
             ["$47", "@55", "%97", "1", "1", "2.1.162", "99143", "86", "14", "/Users/x/Projects/mac-tmux-kit", "tmux-pane", "0", "35"],
-            ["$33", "@53", "%87", "0", "0", "nvim", "97963", "109", "53", "/Users/x/Documents/草稿_示例", "", "0", "0"],
+            ["$33", "@53", "%87", "0", "0", "nvim", "97963", "109", "53", "/Users/example/Documents/草稿_示例", "", "0", "0"],
         ])
 
         let panes = TmuxParser.panes(raw)
