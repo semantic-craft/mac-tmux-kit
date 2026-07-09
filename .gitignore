@@ -19,3 +19,7 @@ xcuserdata/
 
 # Claude Code worktrees — local isolated repo checkouts, never committed
 .claude/worktrees/
+.trellis/tasks/archive/
+.claude/
+.codex/
+.agents/
