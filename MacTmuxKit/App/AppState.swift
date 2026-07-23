@@ -549,15 +549,15 @@ final class AppState {
 
         if let stateReader {
             do { liveSessions = try await stateReader.listSessions() }
-            catch { failures.append("listSessions: \(message(for: error))") }
+            catch { failures.append("listSessions") }
             do { liveWindows = try await stateReader.listAllWindows() }
-            catch { failures.append("listAllWindows: \(message(for: error))") }
+            catch { failures.append("listAllWindows") }
             do { livePanes = try await stateReader.listAllPanes() }
-            catch { failures.append("listAllPanes: \(message(for: error))") }
+            catch { failures.append("listAllPanes") }
             do { liveHost = try await stateReader.hostShort() }
-            catch { failures.append("hostShort: \(message(for: error))") }
+            catch { failures.append("hostShort") }
         } else {
-            failures.append("tmux: \(TmuxError.binaryNotFound.userMessage)")
+            failures.append("tmuxUnavailable")
         }
 
         var lines: [String] = [
@@ -565,22 +565,22 @@ final class AppState {
             "generated: \(ISO8601DateFormatter().string(from: Date()))",
             "",
             "tmux",
-            "  binary: \(service?.binary.path ?? "not found")",
-            "  socket: \(service?.socket ?? TmuxService.resolveSocket())",
+            "  binary: \(service == nil ? "missing" : "available")",
+            "  socket: configured",
             "",
             "app state",
             "  tmux available: \(tmuxAvailable)",
             "  loading: \(isLoading)",
-            "  last status: \(statusMessage.map(debugSingleLine) ?? "OK")",
+            "  last status: \(statusMessage == nil ? "OK" : "present")",
             "  counts: sessions=\(sessions.count) windows=\(windows.count) panes=\(panes.count)",
             "",
             "fresh tmux read",
-            "  host: \(liveHost.isEmpty ? "unknown" : debugSingleLine(liveHost))",
+            "  host: \(liveHost.isEmpty ? "unknown" : "available")",
             "  counts: sessions=\(liveSessions.count) windows=\(liveWindows.count) panes=\(livePanes.count)",
         ]
 
         lines.append("  failures: \(failures.isEmpty ? "none" : "")")
-        lines += failures.map { "    - \(debugSingleLine($0))" }
+        lines += failures.map { "    - \($0)" }
         lines.append("")
         lines.append("sessions")
         lines += debugSessionLines(sessions: liveSessions, windows: liveWindows, panes: livePanes)
@@ -638,30 +638,20 @@ final class AppState {
         return sessions.flatMap { session -> [String] in
             let sessionWindows = (windowsBySession[session.id] ?? []).sorted { $0.index < $1.index }
             var lines = [
-                "  \(session.id) \(debugQuoted(session.name)) attached=\(session.attached) windows=\(session.windowCount)",
+                "  \(session.id) attached=\(session.attached) windows=\(session.windowCount)",
             ]
             if sessionWindows.isEmpty {
                 lines.append("    windows: none")
             } else {
                 for window in sessionWindows {
                     let windowPanes = (panesByWindow[window.id] ?? []).sorted { $0.index < $1.index }
-                    lines.append("    \(window.id) index=\(window.index) active=\(window.active) name=\(debugQuoted(window.name)) panes=\(window.paneCount)")
+                    lines.append("    \(window.id) index=\(window.index) active=\(window.active) panes=\(window.paneCount)")
                     for pane in windowPanes {
-                        lines.append("      \(pane.id) index=\(pane.index) active=\(pane.active) command=\(debugQuoted(pane.command)) size=\(pane.width)x\(pane.height)")
+                        lines.append("      \(pane.id) index=\(pane.index) active=\(pane.active) size=\(pane.width)x\(pane.height)")
                     }
                 }
             }
             return lines
         }
-    }
-
-    private func debugQuoted(_ value: String) -> String {
-        "\"\(debugSingleLine(value).replacingOccurrences(of: "\"", with: "\\\""))\""
-    }
-
-    private func debugSingleLine(_ value: String) -> String {
-        value
-            .replacingOccurrences(of: "\n", with: "\\n")
-            .replacingOccurrences(of: "\r", with: "\\r")
     }
 }

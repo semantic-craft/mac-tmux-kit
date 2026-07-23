@@ -166,7 +166,7 @@ final class AppStateRefreshTests: XCTestCase {
         XCTAssertEqual(app.pinnedFirstSessions().first?.id, "$42")
     }
 
-    func testDebugSnapshotContainsMetadataAndKnownSession() async {
+    func testDebugSnapshotRedactsLocalIdentifiers() async {
         let app = AppState(
             service: TmuxService(binary: URL(fileURLWithPath: "/bin/tmux")),
             stateReader: FakeTmuxStateReader([
@@ -178,12 +178,16 @@ final class AppStateRefreshTests: XCTestCase {
         await app.refresh()
         let snapshot = await app.debugSnapshot()
 
-        XCTAssertTrue(snapshot.contains("binary: /bin/tmux"))
-        XCTAssertTrue(snapshot.contains("socket: "))
+        XCTAssertTrue(snapshot.contains("binary: available"))
+        XCTAssertTrue(snapshot.contains("socket: configured"))
         XCTAssertTrue(snapshot.contains("counts: sessions=1 windows=1 panes=1"))
-        XCTAssertTrue(snapshot.contains("$1 \"taiwan\""))
-        XCTAssertTrue(snapshot.contains("@1 index=0 active=true name=\"shell\""))
-        XCTAssertTrue(snapshot.contains("%9 index=9 active=true command=\"zsh\""))
+        XCTAssertTrue(snapshot.contains("$1 attached=false windows=1"))
+        XCTAssertTrue(snapshot.contains("@1 index=0 active=true panes=1"))
+        XCTAssertTrue(snapshot.contains("%9 index=9 active=true size="))
+        XCTAssertFalse(snapshot.contains("/bin/tmux"))
+        XCTAssertFalse(snapshot.contains("taiwan"))
+        XCTAssertFalse(snapshot.contains("shell"))
+        XCTAssertFalse(snapshot.contains("zsh"))
     }
 
     func testDebugSnapshotIncludesReadFailures() async {
@@ -196,10 +200,11 @@ final class AppStateRefreshTests: XCTestCase {
         let snapshot = await app.debugSnapshot()
 
         XCTAssertTrue(snapshot.contains("failures:"))
-        XCTAssertTrue(snapshot.contains("listSessions: socket denied"))
-        XCTAssertTrue(snapshot.contains("listAllWindows: socket denied"))
-        XCTAssertTrue(snapshot.contains("listAllPanes: socket denied"))
-        XCTAssertTrue(snapshot.contains("hostShort: socket denied"))
+        XCTAssertTrue(snapshot.contains("- listSessions"))
+        XCTAssertTrue(snapshot.contains("- listAllWindows"))
+        XCTAssertTrue(snapshot.contains("- listAllPanes"))
+        XCTAssertTrue(snapshot.contains("- hostShort"))
+        XCTAssertFalse(snapshot.contains("socket denied"))
         XCTAssertTrue(snapshot.contains("sessions\n  none"))
     }
 }

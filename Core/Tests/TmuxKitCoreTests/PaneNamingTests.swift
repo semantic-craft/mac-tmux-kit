@@ -4,7 +4,7 @@ import XCTest
 /// tmux defaults every `pane_title` to the host name, so a title only counts as
 /// a user-set name when it is non-empty and differs from the host and command.
 final class PaneNamingTests: XCTestCase {
-    private let host = "xianwei-imac"
+    private let host = "example-mac"
 
     func testDefaultHostTitleIsNotCustom() {
         XCTAssertNil(paneCustomTitle(title: host, command: "bash", host: host))
@@ -39,21 +39,21 @@ final class PaneNamingTests: XCTestCase {
     func testReadableTitlePrefersCustomTitle() {
         XCTAssertEqual(
             paneReadableTitle(
-                title: "p09-driver",
+                title: "api-driver",
                 command: "2.1.177",
                 host: host,
-                path: "/Users/example/Projects/paper-annotator"
+                path: "/Users/example/Projects/demo-app"
             ),
-            "p09-driver"
+            "api-driver"
         )
         XCTAssertEqual(
             paneReadableSubtitle(
-                title: "p09-driver",
+                title: "api-driver",
                 command: "2.1.177",
                 host: host,
-                path: "/Users/example/Projects/paper-annotator"
+                path: "/Users/example/Projects/demo-app"
             ),
-            "paper-annotator · 2.1.177"
+            "demo-app · 2.1.177"
         )
     }
 
@@ -63,16 +63,16 @@ final class PaneNamingTests: XCTestCase {
                 title: host,
                 command: "2.1.177",
                 host: host,
-                path: "/Users/example/Projects/rime-law-next"
+                path: "/Users/example/Projects/sample-service"
             ),
-            "rime-law-next"
+            "sample-service"
         )
         XCTAssertEqual(
             paneReadableSubtitle(
                 title: host,
                 command: "2.1.177",
                 host: host,
-                path: "/Users/example/Projects/rime-law-next"
+                path: "/Users/example/Projects/sample-service"
             ),
             "2.1.177"
         )
