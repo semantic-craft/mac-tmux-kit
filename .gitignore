@@ -11,8 +11,14 @@ build/
 xcuserdata/
 
 # Secrets / local config
-*.env
 .env
+.env.*
+*.env
+*.key
+*.pem
+*.p12
+*.pfx
+*.mobileprovision
 
 # Local-only Claude Code overrides (plugin scoping)
 .claude/settings.local.json
