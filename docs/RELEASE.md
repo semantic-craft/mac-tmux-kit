@@ -11,7 +11,7 @@ runs on any Mac with no Gatekeeper warning and keeps every feature.
    *Developer ID Application*.
 2. Store a notarization credential profile:
    ```sh
-   xcrun notarytool store-credentials MacTmuxKitNotary \
+   xcrun notarytool store-credentials xw-notary \
      --apple-id "you@example.com" --team-id "YOURTEAMID" \
      --password "app-specific-password"   # from appleid.apple.com > App-Specific Passwords
    ```
