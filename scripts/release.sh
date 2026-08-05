@@ -5,7 +5,7 @@
 #   1. A "Developer ID Application" certificate in your keychain
 #      (Xcode > Settings > Accounts > Manage Certificates > + > Developer ID Application).
 #   2. A stored notarization credential profile:
-#        xcrun notarytool store-credentials MacTmuxKitNotary \
+#        xcrun notarytool store-credentials xw-notary \
 #          --apple-id "you@example.com" --team-id "TEAMID" \
 #          --password "app-specific-password"      # appleid.apple.com > App-Specific Passwords
 #
@@ -14,7 +14,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-PROFILE="${NOTARY_PROFILE:-MacTmuxKitNotary}"
+PROFILE="${NOTARY_PROFILE:-xw-notary}"
 
 # 1. Developer ID Application certificate.
 DEVID="$(security find-identity -v -p codesigning | sed -n 's/.*\"\(Developer ID Application[^\"]*\)\".*/\1/p' | head -1)"
