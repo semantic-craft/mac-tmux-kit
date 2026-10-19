@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
+# Pure-logic tests (AGENTS.md). App build, signing and install use scripts/build-app.sh and are not part of check.
+swift test --package-path Core
